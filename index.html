@@ -1,0 +1,1951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parli Resolutions Explorer</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
+
+  <style>
+    :root {
+      --npdl-navy: #002b49;
+      --npdl-blue: #0077c8;
+      --npdl-gray: #f7f7f7;
+      --npdl-text: #333333;
+    }
+    tr.bg-yellow-100 {
+      transition: background-color 0.5s ease;
+    }
+
+    body { font-family: 'Inter', sans-serif; color: var(--npdl-text); background-color: var(--npdl-gray); }
+    header { background-color: var(--npdl-navy); color: white; }
+    .tab-btn.active { border-bottom: 3px solid var(--npdl-blue); color: var(--npdl-blue); }
+    .tab-slider { transition: transform 0.3s ease; height: 3px; background: var(--npdl-blue); position: absolute; bottom: 0; left: 0; }
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      right: 0;
+      background-color: white;
+      min-width: 180px;
+      border: 1px solid #ddd;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      z-index: 10;
+      border-radius: 0.5rem;
+      padding: 0.5rem;
+    }
+    .dropdown:hover .dropdown-content { display: block; }
+
+    /* Dynamic Tag Rows Styles */
+    .dynamic-tag-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 12px;
+      background-color: #f0f8ff;
+      border: 1px solid #0077c8;
+      border-radius: 0.375rem;
+      width: fit-content;
+    }
+
+    .dynamic-tag-row select {
+      padding: 5px 10px;
+      font-size: 14px;
+      border: 1px solid #ddd;
+      border-radius: 0.375rem;
+    }
+
+    .tag-remove-btn {
+      background: none;
+      border: none;
+      color: #dc2626;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 0 6px;
+      font-weight: bold;
+    }
+
+    .tag-remove-btn:hover {
+      color: #991b1b;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+<header class="p-4 flex justify-between items-center shadow-md">
+  <h1 class="text-2xl font-bold">Parli Resolutions Explorer</h1>
+</header>
+
+<nav class="relative flex justify-center mt-4 border-b border-gray-300">
+  <button id="tabRes" class="tab-btn px-4 py-2 font-semibold active">Resolutions</button>
+  <button id="tabRand" class="tab-btn px-4 py-2 font-semibold">Randomizer</button>
+  <button id="tabTour" class="tab-btn px-4 py-2 font-semibold">Tournaments</button>
+  <button id="tabTags" class="tab-btn px-4 py-2 font-semibold">Tags</button>
+  <button id="tabAna" class="tab-btn px-4 py-2 font-semibold">Analytics</button>
+</nav>
+
+<main class="flex-1 p-4 sm:p-6 max-w-7xl mx-auto w-full">
+  <div id="globalLoadingOverlay"
+     class="fixed inset-0 z-50 flex items-center justify-center bg-white">
+  <div class="text-center">
+    <div class="text-xl font-semibold mb-2">
+      Loading resolutions and analytics…
+    </div>
+    <div class="text-sm text-gray-500">
+      Please wait
+    </div>
+  </div>
+</div>
+
+<!-- ========================= -->
+<!-- RESOLUTIONS TAB -->
+<!-- ========================= -->
+<section id="resTab" class="tab-section block">
+
+  <div
+    id="backToTournament"
+    class="mb-3 text-sm text-blue-600 underline cursor-pointer hidden"
+  >
+    ← Back to Tournament
+  </div>
+
+  <!-- FILTERS (UNCHANGED) -->
+  <div class="flex flex-wrap gap-3 mb-4">
+    <input id="searchInput" type="text" placeholder="Search resolutions..."
+      class="border rounded-lg px-3 py-2 w-full sm:w-64" />
+    <div>
+  <label class="block text-xs font-semibold mb-1">Season</label>
+  <div class="dropdown">
+    <button
+      id="seasonFilterBtn"
+      class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
+      All
+    </button>
+    <div
+      id="seasonFilterMenu"
+      class="dropdown-content max-h-60 overflow-y-auto">
+    </div>
+  </div>
+
+</div>
+
+    <div>
+  <label class="block text-xs font-semibold mb-1">Region</label>
+  <div class="dropdown">
+    <button
+      id="regionFilterBtn"
+      class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
+      All
+    </button>
+    <div
+      id="regionFilterMenu"
+      class="dropdown-content max-h-60 overflow-y-auto">
+    </div>
+  </div>
+
+</div>
+
+    <div>
+  <label class="block text-xs font-semibold mb-1">Tournament</label>
+  <div class="dropdown">
+    <button
+      id="tournFilterBtn"
+      class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
+      All
+    </button>
+    <div
+      id="tournFilterMenu"
+      class="dropdown-content max-h-60 overflow-y-auto">
+    </div>
+  </div>
+
+</div>
+
+    <div>
+  <label class="block text-xs font-semibold mb-1">Tag</label>
+  <div class="dynamic-tag-row flex gap-2 items-center">
+    <select id="tagFilterType" class="border rounded-lg px-3 py-2 bg-white">
+      <option value="include">Include</option>
+      <option value="exclude">Exclude</option>
+    </select>
+    <div class="dropdown">
+      <button
+        id="tagFilterBtn"
+        class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
+        All
+      </button>
+      <div
+        id="tagFilterMenu"
+        class="dropdown-content max-h-60 overflow-y-auto">
+      </div>
+    </div>
+    <button
+      id="addTagBtn"
+      class="border rounded-lg px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 w-fit mt-0">
+      Add Tag
+    </button>
+  </div>
+  <div id="dynamicTagContainer" class="mt-3 flex flex-col gap-2"></div>
+</div>
+
+<div>
+  <label class="block text-xs font-semibold mb-1">Level</label>
+  <select id="levelFilter" class="border rounded-lg px-3 py-2">
+    <option value="">All</option>
+  </select>
+
+</div>
+
+
+  </div>
+
+  <!-- COLUMN MENU -->
+  <div class="flex justify-end mb-2">
+    <div class="dropdown">
+      <button class="bg-[var(--npdl-blue)] text-white font-semibold px-3 py-1 rounded-md">Add Details</button>
+      <div class="dropdown-content text-sm">
+        <label class="block"><input type="checkbox" class="colToggle" data-col="Rd" checked> Rd</label>
+        <label class="block"><input type="checkbox" class="colToggle" data-col="Novice Rd"> Novice Rd</label>
+        <label class="block"><input type="checkbox" class="colToggle" data-col="Tournament"> Tournament</label>
+        <label class="block"><input type="checkbox" class="colToggle" data-col="Note"> Note</label>
+        <hr class="my-1">
+
+        <label class="block font-semibold text-xs mt-1">
+          <input type="checkbox" id="govOppToggle">
+          Gov / Opp Stats
+        </label>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div id="resTableWrapper" class="relative overflow-x-auto border rounded-lg bg-white shadow-sm">
+
+  <!-- TABLE LOADING OVERLAY -->
+  <div id="tableLoadingOverlay"
+       class="hidden absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-10">
+    <div class="flex flex-col items-center">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--npdl-blue)] mb-2"></div>
+      <span class="text-sm font-medium text-gray-700">Filtering...</span>
+    </div>
+  </div>
+
+  <table id="resTableMain" class="min-w-full text-sm text-left">
+      <thead class="bg-gray-100">
+        <tr id="tableHeader">
+          <th class="px-4 py-2" data-col="Rd">Rd</th>
+          <th class="px-4 py-2 hidden" data-col="Novice Rd">Novice Rd</th>
+          <th class="px-4 py-2">Resolution</th>
+          <th class="px-4 py-2 hidden" data-col="Tournament">Tournament</th>
+          <th class="px-4 py-2 hidden" data-col="Note">Note</th>
+          <th class="px-4 py-2 hidden" data-col="Gov Wins">Gov Wins</th>
+          <th class="px-4 py-2 hidden" data-col="Opp Wins">Opp Wins</th>
+          <th class="px-4 py-2 hidden" data-col="Gov Ballots">Gov Ballots</th>
+          <th class="px-4 py-2 hidden" data-col="Opp Ballots">Opp Ballots</th>
+
+        </tr>
+      </thead>
+      <tbody id="resTable" class="divide-y"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ========================= -->
+<!-- ANALYTICS TAB -->
+<!-- ========================= -->
+<section id="anaTab" class="tab-section hidden">
+  <div class="grid gap-6 md:grid-cols-2">
+    <div class="bg-white p-4 rounded-lg shadow-md">
+      <h2 class="text-lg font-semibold mb-2">Top Tags</h2>
+      <canvas id="tagChart" height="200"></canvas>
+    </div>
+    <div class="bg-white p-4 rounded-lg shadow-md">
+      <h2 class="text-lg font-semibold mb-2">Resolutions by Region</h2>
+      <canvas id="regionChart" height="200"></canvas>
+    </div>
+    <div class="bg-white p-4 rounded-lg shadow-md">
+      <h2 class="text-lg font-semibold mb-2">Topic Committee Frequency</h2>
+      <canvas id="committeeChart" height="200"></canvas>
+    </div>
+    <div class="bg-white p-4 rounded-lg shadow-md">
+      <h2 class="text-lg font-semibold mb-2">Gov vs Opp Wins</h2>
+      <canvas id="govOppWinsChart" height="200"></canvas>
+    </div>
+    <div class="bg-white p-4 rounded-lg shadow-md md:col-span-2">
+      <h2 class="text-lg font-semibold mb-2">Tag Co-occurrence Heatmap</h2>
+      <canvas id="tagHeatmap" height="300"></canvas>
+    </div>
+    <div class="bg-white p-4 rounded-lg shadow-md md:col-span-2">
+      <h2 class="text-lg font-semibold mb-2">Tag Popularity Over Time</h2>
+      <canvas id="tagTrendChart" height="200"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= -->
+<!-- RANDOMIZER TAB -->
+<!-- ========================= -->
+<section id="randTab" class="tab-section hidden">
+  <div class="bg-white rounded-lg p-6 shadow-md max-w-xl mx-auto">
+    <h2 class="text-xl font-bold mb-4 text-center">Resolution Randomizer</h2>
+    <div class="flex flex-wrap gap-3 justify-center mb-4">
+      <div>
+  <label class="block text-xs font-semibold mb-1">Season</label>
+    <div class="dropdown">
+    <button
+      id="randSeasonBtn"
+      class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
+      All
+    </button>
+    <div
+      id="randSeasonMenu"
+      class="dropdown-content max-h-60 overflow-y-auto">
+    </div>
+</div>
+
+</div>
+
+      <div>
+  <label class="block text-xs font-semibold mb-1">Region</label>
+<div class="dropdown">
+  <button
+    id="randRegionBtn"
+    class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
+    All
+  </button>
+  <div
+    id="randRegionMenu"
+    class="dropdown-content max-h-60 overflow-y-auto">
+  </div>
+</div>
+
+</div>
+
+      <div>
+  <label class="block text-xs font-semibold mb-1">Tournament</label>
+<div class="dropdown">
+  <button
+    id="randTournBtn"
+    class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
+    All
+  </button>
+  <div
+    id="randTournMenu"
+    class="dropdown-content max-h-60 overflow-y-auto">
+  </div>
+</div>
+
+</div>
+
+      <div>
+  <label class="block text-xs font-semibold mb-1">Tag</label>
+  <div class="dynamic-tag-row flex gap-2 items-center">
+    <select id="randTagFilterType" class="border rounded-lg px-3 py-2 bg-white">
+      <option value="include">Include</option>
+      <option value="exclude">Exclude</option>
+    </select>
+    <div class="dropdown">
+      <button
+        id="randTagBtn"
+        class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
+        All
+      </button>
+      <div
+        id="randTagMenu"
+        class="dropdown-content max-h-60 overflow-y-auto">
+      </div>
+    </div>
+    <button
+      id="randAddTagBtn"
+      class="border rounded-lg px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 w-fit mt-0">
+      Add Tag
+    </button>
+  </div>
+  <!-- Dynamic Tag Rows Container for Randomizer -->
+  <div id="randDynamicTagContainer" class="mt-3 flex flex-col gap-2"></div>
+</div>
+
+      <div>
+  <label class="block text-xs font-semibold mb-1">Level</label>
+  <select id="randLevelFilter" class="border rounded-lg px-3 py-2 bg-white w-48">
+    <option value="">All</option>
+  </select>
+</div>
+
+      <div>
+  <label class="block text-xs font-semibold mb-1">Number of Resolutions</label>
+  <select id="randQuantitySelect" class="border rounded-lg px-3 py-2 bg-white w-48">
+    <option value="1">One</option>
+    <option value="2">Two</option>
+    <option value="3">Three</option>
+  </select>
+</div>
+
+    </div>
+
+    <div class="text-center">
+      <button id="randBtn" class="bg-[var(--npdl-blue)] text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-600">🎲 Generate</button>
+    </div>
+    <div id="randResult" class="mt-4 text-center text-lg font-medium"></div>
+  </div>
+</section>
+
+<!-- ========================= -->
+<!-- TOURNAMENTS TAB -->
+<!-- ========================= -->
+<section id="tourTab" class="tab-section hidden">
+  <div
+    id="backToResolution"
+    class="mb-3 text-sm text-blue-600 underline cursor-pointer hidden"
+  >
+    ← Back to Resolutions
+  </div>
+
+  <div class="overflow-x-auto border rounded-lg bg-white shadow-sm">
+    <table class="min-w-full text-sm text-left">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-2">Name</th>
+          <th class="px-4 py-2">Host</th>
+          <th class="px-4 py-2">Region</th>
+          <th class="px-4 py-2">Start Date</th>
+          <th class="px-4 py-2">End Date</th>
+          <th class="px-4 py-2">Topic Committee</th>
+          <th class="px-4 py-2">Invite</th>
+        </tr>
+      </thead>
+      <tbody id="tournamentTable" class="divide-y"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ========================= -->
+<!-- TAGS TAB -->
+<!-- ========================= -->
+<section id="tagsTab" class="tab-section hidden">
+  <div class="overflow-x-auto border rounded-lg bg-white shadow-sm">
+    <table class="min-w-full text-sm text-left">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-2">Tag</th>
+          <th class="px-4 py-2">Description</th>
+          <th class="px-4 py-2">Count</th>
+        </tr>
+      </thead>
+      <tbody id="tagsTable" class="divide-y"></tbody>
+    </table>
+  </div>
+  <div class="mt-10 flex flex-col items-center">
+    <h3 class="text-lg font-semibold mb-4">Regions Map</h3>
+    <img
+      src="https://images.squarespace-cdn.com/content/v1/5a80e6a8ccc5c5e243a5e6b9/8bdda439-a03f-4e42-8df3-cef003bc5cf2/regions.png?format=2500w"
+      alt="Regions map"
+      class="max-w-full h-auto rounded-lg border"
+    >
+  </div>
+
+</section>
+
+</main>
+
+<footer class="text-center text-xs py-4 text-gray-500">
+  Built with ❤️ by Vyomesh · Powered by Google Sheets
+</footer>
+<script>
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzj0kM6bFgO0zNC0B8__W7J4a5x93PUHnAWeBjB89BvzLBhpR9Fn8oyND0cnfY4a_15_w/exec";
+const API_TOKEN = "ajZI13Udb345gEdkcse32lFN";
+
+let allData = [];
+let filteredData = [];
+let tournamentData = [];
+let tagData = [];
+let tournamentNameMap;
+let lastResolutionKey = null;
+let lastTournamentKey = null;
+
+const filterState = {
+  seasons: new Set(),
+  regions: new Set(),
+  tournaments: new Set(),
+  tags: new Set(),
+  tagFilterType: "include",
+  tagRows: [], // Array of {type: 'include'|'exclude', tag: string}
+  level: "",
+  exactTournament: null, // For filtering to a specific tournament instance
+
+  randSeasons: new Set(),
+  randRegions: new Set(),
+  randTags: new Set()
+};
+
+const randFilterState = {
+  seasons: new Set(),
+  regions: new Set(),
+  tournaments: new Set(),
+  tags: new Set(),
+  tagFilterType: "include",
+  tagRows: [], // Array of {type: 'include'|'exclude', tag: string}
+  level: ""
+};
+function showTableLoading() {
+  const overlay = document.getElementById("tableLoadingOverlay");
+  if (overlay) overlay.classList.remove("hidden");
+}
+
+function hideTableLoading() {
+  const overlay = document.getElementById("tableLoadingOverlay");
+  if (overlay) overlay.classList.add("hidden");
+}
+
+
+function formatSeasonFromYear(year) {
+  if (!year) return "";
+  const y = parseInt(year, 10);
+  return `${y}-${String((y + 1) % 100).padStart(2, "0")}`;
+}
+function cleanTournamentName(name) {
+  return name?.replace(/\b20\d{2}(-\d{2})?\b/g, "").trim();
+}
+function extractYear(text) {
+  if (!text) return "";
+  const match = text.match(/\b(20\d{2})\b/);
+  return match ? match[1] : "";
+}
+function tournamentKey(tournamentName) {
+  if (!tournamentName) return "";
+
+  const year = extractYear(tournamentName);
+  const base = cleanTournamentName(tournamentName);
+
+  return `${base}__${year}`;
+}
+function resolutionKey(row) {
+  if (!row) return "";
+  return `${row.Resolution}__${row.Rd}`;
+}
+function renderLink(url, label) {
+  if (!url) return "";
+  return `
+    <a
+      href="${url}"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="text-blue-600 underline hover:text-blue-800"
+    >
+      ${label}
+    </a>
+  `;
+}
+function jumpToTournament(e) {
+  lastResolutionKey = e.currentTarget.dataset.resolution || null;
+
+  e.preventDefault();
+
+  const key = e.currentTarget.dataset.tournament;
+  if (!key) return;
+
+  showTab("tour");
+
+  // Let the tab render before scrolling
+  setTimeout(() => {
+    const row = document.querySelector(
+      `#tournamentTable tr[data-tournament="${key}"]`
+    );
+
+    if (row) {
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      row.classList.add("bg-yellow-100");
+      setTimeout(() => row.classList.remove("bg-yellow-100"), 3000);
+    }
+  }, 50);
+  const backLink = document.getElementById("backToResolution");
+  if (backLink && lastResolutionKey) {
+    backLink.classList.remove("hidden");
+  }
+}
+
+function jumpToResolution(e) {
+  lastTournamentKey = e.currentTarget.dataset.tournament || null;
+
+  e.preventDefault();
+
+  const tournamentName = e.currentTarget.dataset.tournamentFullName || "";
+  if (!tournamentName) return;
+
+  // Clear other filters and set exact tournament
+  filterState.seasons.clear();
+  filterState.regions.clear();
+  filterState.tags.clear();
+  filterState.tagRows = [];
+  filterState.level = "";
+  filterState.tournaments.clear();
+  filterState.exactTournament = tournamentName;
+
+  showTab("res");
+
+  // Let the tab render before updating filters and table
+  setTimeout(() => {
+    populateFilters();
+    renderTable(allData, true);
+  }, 50);
+
+  const backLink = document.getElementById("backToTournament");
+  if (backLink && lastTournamentKey) {
+    backLink.classList.remove("hidden");
+  }
+}
+
+document
+  .getElementById("backToResolution")
+  ?.addEventListener("click", () => {
+    if (!lastResolutionKey) return;
+
+    showTab("res");
+
+    setTimeout(() => {
+      const row = document.querySelector(
+        `#resTable tr[data-resolution="${lastResolutionKey}"]`
+      );
+
+      if (row) {
+        row.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        row.classList.add("bg-yellow-100");
+        setTimeout(() => row.classList.remove("bg-yellow-100"), 3000);
+      }
+    }, 50);
+  });
+
+document
+  .getElementById("backToTournament")
+  ?.addEventListener("click", () => {
+    if (!lastTournamentKey) return;
+
+    // Clear the exact tournament filter to restore normal view
+    filterState.exactTournament = null;
+    populateFilters();
+    renderTable(allData, true);
+
+    showTab("tour");
+
+    setTimeout(() => {
+      const row = document.querySelector(
+        `#tournamentTable tr[data-tournament="${lastTournamentKey}"]`
+      );
+
+      if (row) {
+        row.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        row.classList.add("bg-yellow-100");
+        setTimeout(() => row.classList.remove("bg-yellow-100"), 3000);
+      }
+    }, 50);
+  });
+
+function fillCheckboxMenu(menuId, values, stateSet, btnId, onChange, options = {}) {
+  const menu = document.getElementById(menuId);
+  const btn = document.getElementById(btnId);
+  menu.innerHTML = "";
+  const hideAll = options.hideAll === true || btnId === "excludeTagFilterBtn";
+
+  // Add "All" option at the top (except for exclude filters)
+  if (!hideAll) {
+    const allLabel = document.createElement("label");
+    allLabel.className = "block text-sm cursor-pointer font-semibold pb-1 mb-2 border-b";
+    
+    const allCb = document.createElement("input");
+    allCb.type = "checkbox";
+    allCb.className = "mr-2";
+    
+    // "All" is checked when all items are selected
+    const updateAllCheckbox = () => {
+      allCb.checked = values.length > 0 && values.every(v => stateSet.has(v));
+      allCb.indeterminate = stateSet.size > 0 && stateSet.size < values.length;
+    };
+    
+    updateAllCheckbox();
+    
+    allCb.addEventListener("change", () => {
+      if (allCb.checked) {
+        // Select all items
+        values.forEach(v => stateSet.add(v));
+      } else {
+        // Deselect all items
+        stateSet.clear();
+      }
+      
+      updateAllCheckbox();
+      updateAllItemCheckboxes();
+      updateButtonText();
+      
+      if (onChange) {
+        onChange();
+        filterState.exactTournament = null;
+      } else {
+        populateFilters();
+        renderTable(allData, true);
+      }
+    });
+    
+    allLabel.append(allCb, document.createTextNode("All"));
+    menu.appendChild(allLabel);
+  }
+
+  const updateAllItemCheckboxes = () => {
+    const selector = hideAll
+      ? 'input[type="checkbox"]'
+      : 'input[type="checkbox"]:not(:first-child)';
+    menu.querySelectorAll(selector).forEach(cb => {
+      cb.checked = stateSet.has(cb.value);
+    });
+  };
+
+  const updateButtonText = () => {
+    if (hideAll) {
+      if (stateSet.size === 0) {
+        btn.textContent = "Select Tags";
+      } else if (stateSet.size === values.length) {
+        btn.textContent = "All";
+      } else {
+        btn.textContent = `${stateSet.size} selected`;
+      }
+    } else if (btnId === "excludeTagFilterBtn") {
+      btn.textContent = stateSet.size ? `${stateSet.size} selected` : "None";
+    } else {
+      if (stateSet.size === 0) {
+        btn.textContent = "All";
+      } else if (stateSet.size === values.length) {
+        btn.textContent = "All";
+      } else {
+        btn.textContent = `${stateSet.size} selected`;
+      }
+    }
+  };
+
+  values.forEach(v => {
+    const label = document.createElement("label");
+    label.className = "block text-sm cursor-pointer";
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.value = v;
+    cb.checked = stateSet.has(v);
+    cb.className = "mr-2";
+
+    cb.addEventListener("change", () => {
+      if (cb.checked) stateSet.add(v);
+      else stateSet.delete(v);
+
+      if (!hideAll) {
+        const allCbInMenu = menu.querySelector('input[type="checkbox"]');
+        if (allCbInMenu) {
+          allCbInMenu.checked = values.length > 0 && values.every(v => stateSet.has(v));
+          allCbInMenu.indeterminate = stateSet.size > 0 && stateSet.size < values.length;
+        }
+      }
+      
+      updateButtonText();
+
+      if (onChange) {
+        onChange();
+      } else {
+        filterState.exactTournament = null;
+        populateFilters();
+        renderTable(allData, true);
+      }
+    });
+
+    label.append(cb, document.createTextNode(v));
+    menu.appendChild(label);
+  });
+  
+  updateButtonText();
+}
+
+
+
+
+/* ===============================
+   COLUMN STATE
+   =============================== */
+const columnState = {
+  "Rd": true,
+  "Novice Rd": false,
+  "Tournament": false,
+  "Note": false,
+
+  "Gov Wins": false,
+  "Opp Wins": false,
+  "Gov Ballots": false,
+  "Opp Ballots": false
+};
+
+/* ===============================
+   FETCH DATA
+   =============================== */
+async function fetchData() {
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?token=${API_TOKEN}`);
+    const json = await res.json();
+
+    if (!json.entry || !Array.isArray(json.entry)) {
+      throw new Error("No entry data returned");
+    }
+    allData = json.entry;
+    tournamentData = json.tournaments || [];
+    tagData = json.tags || [];
+    tournamentNameMap = new Map(tournamentData.map(t => [t.Tournament, t.Name]));
+
+    updateAvailableTags();
+
+    populateFilters();
+    renderTable(allData, true);
+    renderAnalytics(allData);
+    populateRandomizer();
+    renderTournamentTable();
+    renderTagsTable();
+    document.getElementById("globalLoadingOverlay").style.display = "none";
+  } catch (err) {
+    console.error(err);
+    document.getElementById("globalLoadingOverlay").innerHTML =
+  "<div class='text-center text-red-600 font-semibold'>Failed to load data. Please refresh.</div>";
+
+    alert("Error loading data." + err.message);
+  }
+}
+
+/* ===============================
+   FILTER POPULATION (UNCHANGED)
+   =============================== */
+function populateFilters() {
+  const seasonOpts = new Set();
+  const regionOpts = new Set();
+  const levelOpts = new Set();
+
+  allData.forEach(row => {
+    const rowLevel = getLevel(row);
+    const seasonVal = formatSeasonFromYear(
+      row.Tournament?.match(/\b(20\d{2})\b/)?.[1]
+    );
+
+    const rowTags = parseTagsFromString(row.Tags);
+
+
+    /* ---------------- SEASON OPTIONS ----------------
+       Filter by EVERYTHING EXCEPT season
+    */
+    if (
+      (filterState.regions.size === 0 || filterState.regions.has(row.Region)) &&
+      (filterState.tournaments.size === 0 ||
+        filterState.tournaments.has(tournamentNameMap.get(row.Tournament) || cleanTournamentName(row.Tournament))) &&
+      matchesDynamicTagRows(rowTags, filterState.tagRows, filterState.tags, filterState.tagFilterType)
+        && (!filterState.level || filterState.level === rowLevel)
+    ) {
+      if (seasonVal) seasonOpts.add(seasonVal);
+    }
+
+    /* ---------------- REGION OPTIONS ----------------
+       Filter by EVERYTHING EXCEPT region
+    */
+    if (
+      (filterState.seasons.size === 0 || filterState.seasons.has(seasonVal)) &&
+      (filterState.tournaments.size === 0 ||
+        filterState.tournaments.has(tournamentNameMap.get(row.Tournament) || cleanTournamentName(row.Tournament))) &&
+      matchesDynamicTagRows(rowTags, filterState.tagRows, filterState.tags, filterState.tagFilterType)
+        && (!filterState.level || filterState.level === rowLevel)
+
+    ) {
+      if (row.Region) regionOpts.add(row.Region);
+    }
+
+    /* -------------- TOURNAMENT OPTIONS --------------
+       Filter by EVERYTHING EXCEPT tournament
+    */
+    if (
+      (filterState.seasons.size === 0 || filterState.seasons.has(seasonVal)) &&
+      (filterState.regions.size === 0 || filterState.regions.has(row.Region)) &&
+      matchesDynamicTagRows(rowTags, filterState.tagRows, filterState.tags, filterState.tagFilterType)
+        && (!filterState.level || filterState.level === rowLevel)
+
+    ) {
+      // Tournament options are now from tournamentData
+    }
+
+    /* ---------------- LEVEL OPTIONS ----------------
+       Filter by EVERYTHING EXCEPT level
+    */
+    if (
+      (filterState.seasons.size === 0 || filterState.seasons.has(seasonVal)) &&
+      (filterState.regions.size === 0 || filterState.regions.has(row.Region)) &&
+      (filterState.tournaments.size === 0 ||
+        filterState.tournaments.has(tournamentNameMap.get(row.Tournament) || cleanTournamentName(row.Tournament))) &&
+      matchesDynamicTagRows(rowTags, filterState.tagRows, filterState.tags, filterState.tagFilterType)
+    ) {
+      if (rowLevel) levelOpts.add(rowLevel);
+    }
+
+  });
+
+  const orderedSeasons = [...seasonOpts].sort((a, b) => {
+    const aStart = parseInt(a.split("-")[0], 10);
+    const bStart = parseInt(b.split("-")[0], 10);
+    return aStart - bStart; // chronological (oldest → newest)
+  });
+
+  fillCheckboxMenu(
+    "seasonFilterMenu",
+    orderedSeasons,
+    filterState.seasons,
+    "seasonFilterBtn"
+  );
+
+  fillCheckboxMenu(
+    "regionFilterMenu",
+    Array.from(regionOpts).sort(),
+    filterState.regions,
+    "regionFilterBtn"
+  );
+
+  const tournOpts = [...new Set(tournamentData.map(t => t.Name).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+  fillCheckboxMenu(
+    "tournFilterMenu",
+    tournOpts,
+    filterState.tournaments,
+    "tournFilterBtn"
+  );
+
+  const tagOpts = tagData.map(t => t.Tag || t.Name).filter(Boolean);
+
+  // Update available tags for dynamic rows
+  allAvailableTags = tagOpts;
+
+  fillCheckboxMenu(
+    "tagFilterMenu",
+    tagOpts,
+    filterState.tags,
+    "tagFilterBtn",
+    null,
+    { hideAll: filterState.tagFilterType === "exclude" }
+  );
+
+  const levelSelect = document.getElementById("levelFilter");
+  const currentLevel = filterState.level;
+
+  levelSelect.innerHTML = '<option value="">All</option>';
+
+  [...levelOpts].sort().forEach(lvl => {
+    const opt = document.createElement("option");
+    opt.value = lvl;
+    opt.textContent = lvl;
+    if (lvl === currentLevel) opt.selected = true;
+    levelSelect.appendChild(opt);
+  });
+
+}
+
+
+
+
+/* ===============================
+   TABLE RENDERING
+   =============================== */
+function renderTable(data, reset = true) {
+  showTableLoading();
+
+  setTimeout(() => {
+  const tbody = document.getElementById("resTable");
+  if (!tbody) return;
+
+  if (reset) {
+    filteredData = data.filter(matchesFilter);
+
+    // Hide back button if exactTournament is cleared
+    const backLink = document.getElementById("backToTournament");
+    if (backLink && !filterState.exactTournament) {
+      backLink.classList.add("hidden");
+    }
+  }
+
+  tbody.innerHTML = filteredData.map(r => `
+    <tr
+      class="hover:bg-gray-50"
+      data-resolution="${resolutionKey(r)}"
+    >
+      ${columnState["Rd"] ? `<td class="px-4 py-2">${r.Rd || ""}</td>` : ""}
+      ${columnState["Novice Rd"] ? `<td class="px-4 py-2">${r["N/JV"] || ""}</td>` : ""}
+      <td class="px-4 py-2">${(r.Resolution || "").replace(/\n/g, '<br>')}</td>
+      ${columnState["Tournament"] ? `
+        <td class="px-4 py-2">
+          <a
+            href="#"
+            class="text-blue-600 underline hover:text-blue-800"
+            data-tournament="${tournamentKey(r.Tournament)}"
+            data-resolution="${resolutionKey(r)}"
+            onclick="jumpToTournament(event)"
+          >
+            ${r.Tournament || ""}
+          </a>
+        </td>
+      ` : ""}
+
+      ${columnState["Note"] ? `<td class="px-4 py-2">${(r.Note || "").replace(/\n/g, '<br>')}</td>` : ""}
+      ${columnState["Gov Wins"] ? `<td class="px-4 py-2">${r["Gov Wins"] ?? ""}</td>` : ""}
+      ${columnState["Opp Wins"] ? `<td class="px-4 py-2">${r["Opp Wins"] ?? ""}</td>` : ""}
+      ${columnState["Gov Ballots"] ? `<td class="px-4 py-2">${r["Gov Ballots"] ?? ""}</td>` : ""}
+      ${columnState["Opp Ballots"] ? `<td class="px-4 py-2">${r["Opp Ballots"] ?? ""}</td>` : ""}
+
+
+    </tr>
+  `).join("");
+
+      updateColumnVisibility();
+    govOppToggle.checked = govOppCols.every(col => columnState[col]);
+
+    hideTableLoading();
+  }, 0);
+}
+
+
+/* ===============================
+   COLUMN TOGGLES
+   =============================== */
+document.querySelectorAll(".colToggle").forEach(cb => {
+  cb.checked = !!columnState[cb.dataset.col];
+  cb.addEventListener("change", () => {
+    
+    columnState[cb.dataset.col] = cb.checked;
+    renderTable(allData, true);
+  });
+});
+const govOppToggle = document.getElementById("govOppToggle");
+const govOppCols = [
+  "Gov Wins",
+  "Opp Wins",
+  "Gov Ballots",
+  "Opp Ballots"
+];
+
+govOppToggle.addEventListener("change", () => {
+  
+  govOppCols.forEach(col => {
+    columnState[col] = govOppToggle.checked;
+  });
+  renderTable(allData, true);
+});
+
+
+function updateColumnVisibility() {
+  document.querySelectorAll("#tableHeader th[data-col]").forEach(th => {
+    th.classList.toggle("hidden", !columnState[th.dataset.col]);
+  });
+}
+function getLevel(row) {
+  const hasVarsity = row.Rd && row.Rd !== ".";
+  const hasNovice = row["N/JV"] && row["N/JV"] !== ".";
+
+  if (hasVarsity && hasNovice) return "Varsity + Novice";
+  if (hasVarsity) return "Only Varsity";
+  if (hasNovice) return "Only Novice";
+  return "";
+}
+function parseTagsFromString(tagString) {
+  if (!tagString) return [];
+  return tagString
+    .split(",")
+    .map(t => t.trim())
+    .filter(Boolean);
+}
+function matchesTagFilter(rowTags, selectedTags, mode) {
+  if (selectedTags.size === 0) return true;
+
+  if (mode === "AND") {
+    return [...selectedTags].every(t => rowTags.includes(t));
+  }
+
+  // OR (default)
+  return rowTags.some(t => selectedTags.has(t));
+}
+
+function matchesDynamicTagRows(rowTags, tagRows, mainTagSet = filterState.tags, mainTagType = filterState.tagFilterType) {
+  // Check exclude conditions (these always apply if present)
+  const excludeRows = tagRows.filter(r => r.type === "exclude");
+  for (const row of excludeRows) {
+    // Exclude: row should NOT have ANY of these tags
+    const tags = Array.isArray(row.tags) ? row.tags : [row.tags];
+    if (tags.some(tag => rowTags.includes(tag))) {
+      return false;
+    }
+  }
+
+  // If there are exclude rows and the resolution has no tags, exclude it
+  // (since it doesn't contribute meaningfully to exclude filtering)
+  if (excludeRows.length > 0 && rowTags.length === 0) {
+    return false;
+  }
+
+  // Check include conditions (at least one tag from each include row must be present)
+  const includeRows = tagRows.filter(r => r.type === "include");
+  for (const row of includeRows) {
+    // Include: row should have at least one of the selected tags (OR logic)
+    const tags = Array.isArray(row.tags) ? row.tags : [row.tags];
+    if (tags.length > 0 && !tags.some(tag => rowTags.includes(tag))) {
+      return false;
+    }
+  }
+
+  if (mainTagSet.size > 0) {
+    if (mainTagType === "exclude") {
+      if (rowTags.length === 0) return false;
+      const hasMainTag = [...mainTagSet].some(t => rowTags.includes(t));
+      if (hasMainTag) return false;
+    } else {
+      const hasMainTag = [...mainTagSet].some(t => rowTags.includes(t));
+      if (!hasMainTag) return false;
+    }
+  }
+
+  return true;
+}
+
+function sortTagsNonRegionFirst(tags) {
+  const regionTags = getRegionTagsFromTagData();
+
+  const nonRegion = [];
+  const region = [];
+
+  tags.forEach(tag => {
+    if (regionTags.has(tag)) {
+      region.push(tag);
+    } else {
+      nonRegion.push(tag);
+    }
+  });
+
+  nonRegion.sort((a, b) => a.localeCompare(b));
+  region.sort((a, b) => a.localeCompare(b));
+
+  return [...nonRegion, ...region];
+}
+
+function getRegionTagsFromTagData() {
+  if (!Array.isArray(tagData) || tagData.length < 7) return new Set();
+
+  const lastSeven = tagData.slice(-7);
+
+  return new Set(
+    lastSeven
+      .map(t => t.Tag || t.Name)
+      .filter(Boolean)
+  );
+}
+
+
+
+/* ===============================
+   FILTERING (UNCHANGED)
+   =============================== */
+function matchesFilter(row) {
+  const search = document.getElementById("searchInput").value.toLowerCase();
+
+  const seasonVal = formatSeasonFromYear(
+    row.Tournament?.match(/\b(20\d{2})\b/)?.[1]
+  );
+
+  const rowTags = parseTagsFromString(row.Tags);
+
+  const text = [
+    row.Resolution,
+    row.Tournament,
+    row.Region,
+    row.Note,
+    row["N/JV"] || "",
+    rowTags.join(" ")
+  ].join(" ").toLowerCase();
+
+  const rowLevel = getLevel(row);
+
+  // If exactTournament is set, only show resolutions from that specific tournament
+  if (filterState.exactTournament) {
+    return row.Tournament === filterState.exactTournament
+      && (!search || text.includes(search));
+  }
+
+  return (!search || text.includes(search))
+    && (filterState.seasons.size === 0 || filterState.seasons.has(seasonVal))
+    && (filterState.regions.size === 0 || filterState.regions.has(row.Region))
+    && (filterState.tournaments.size === 0 ||
+      filterState.tournaments.has(tournamentNameMap.get(row.Tournament) || cleanTournamentName(row.Tournament)))
+    && matchesDynamicTagRows(rowTags, filterState.tagRows, filterState.tags, filterState.tagFilterType)
+    && (!filterState.level || filterState.level === rowLevel);
+
+}
+
+
+document.getElementById("searchInput")
+  .addEventListener("input", () => {
+      filterState.exactTournament = null;
+    
+    populateFilters();
+    renderTable(allData, true);
+  });
+
+document.getElementById("levelFilter")
+    .addEventListener("change", e => {
+      filterState.exactTournament = null;
+    
+    filterState.level = e.target.value;
+    populateFilters();
+    renderTable(allData, true);
+  });
+
+
+/* ===============================
+   ANALYTICS (FULL RESTORE)
+   =============================== */
+function renderAnalytics(data) {
+  const ctxTag = document.getElementById("tagChart");
+  const ctxRegion = document.getElementById("regionChart");
+  const ctxCommittee = document.getElementById("committeeChart");
+  const ctxHeatmap = document.getElementById("tagHeatmap");
+  const ctxTrend = document.getElementById("tagTrendChart");
+  const ctxGovOpp = document.getElementById("govOppWinsChart");
+
+  Chart.helpers.each(Chart.instances, i => i.destroy?.());
+
+  /* --- Top Tags --- */
+  const tagCounts = {};
+  data.forEach(r => {
+    parseTagsFromString(r.Tags).forEach(tag => {
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+    });
+  });
+
+  const topTags = Object.entries(tagCounts)
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,10);
+
+  new Chart(ctxTag, {
+    type: "bar",
+    data: {
+      labels: topTags.map(x=>x[0]),
+      datasets: [{ data: topTags.map(x=>x[1]), backgroundColor: "rgba(0,119,200,0.6)" }]
+    },
+    options: { plugins: { legend: { display: false } } }
+  });
+
+  /* --- By Region --- */
+  const regionCounts = {};
+  data.forEach(r => {
+    if (r.Region) regionCounts[r.Region] = (regionCounts[r.Region] || 0) + 1;
+  });
+
+  new Chart(ctxRegion, {
+    type: "pie",
+    data: { labels: Object.keys(regionCounts), datasets: [{ data: Object.values(regionCounts) }] }
+  });
+
+  /* --- Committee --- */
+  const commCounts = {};
+  data.forEach(r => {
+    if (r["Topic Committee"]) {
+      r["Topic Committee"].split(",").map(x=>x.trim()).forEach(m => {
+        if (m === "Zach Berg (chair)") m = "Zach Berg";
+        commCounts[m] = (commCounts[m] || 0) + 1;
+      });
+    }
+  });
+
+  const commSorted = Object.entries(commCounts).sort((a,b)=>b[1]-a[1]).slice(0,15);
+
+  new Chart(ctxCommittee, {
+    type: "bar",
+    data: { labels: commSorted.map(x=>x[0]), datasets: [{ data: commSorted.map(x=>x[1]), backgroundColor: "rgba(0,119,200,0.6)" }] },
+    options: { plugins: { legend: { display: false } } }
+  });
+
+  /* --- Gov vs Opp Wins --- */
+  let govWins = 0;
+  let oppWins = 0;
+
+  data.forEach(r => {
+    govWins += Number(r["Gov Wins"]) || 0;
+    oppWins += Number(r["Opp Wins"]) || 0;
+  });
+  new Chart(ctxGovOpp, {
+    type: "pie",
+    data: {
+      labels: ["Gov Wins", "Opp Wins"],
+      datasets: [{
+        data: [govWins, oppWins],
+        backgroundColor: [
+          "rgba(0,119,200,0.7)",
+          "rgba(200,60,60,0.7)"
+        ]
+      }]
+    },
+    options: {
+      plugins: {
+        legend: {
+          position: "bottom"
+        }
+      }
+    }
+  });
+
+
+
+  /* --- Tag Co-occurrence Heatmap --- */
+  const tags = Object.keys(tagCounts).slice(0,10);
+  const matrix = tags.map(()=>tags.map(()=>0));
+
+  data.forEach(r => {
+    const rowTags = parseTagsFromString(r.Tags);
+    rowTags.forEach(t1 => rowTags.forEach(t2 => {
+      if (tags.includes(t1) && tags.includes(t2)) {
+        matrix[tags.indexOf(t1)][tags.indexOf(t2)]++;
+      }
+    }));
+  });
+
+  new Chart(ctxHeatmap, {
+    type: "matrix",
+    data: {
+      datasets: [{
+        data: tags.flatMap((t,i)=>tags.map((u,j)=>({x:u,y:t,v:matrix[i][j]}))),
+        width: 22,
+        height: 22,
+        backgroundColor: ctx => `rgba(0,119,200,${ctx.raw.v / Math.max(...matrix.flat())})`
+      }]
+    },
+    options: { scales: { x: { type:"category", labels:tags }, y:{ type:"category", labels:tags } } }
+  });
+
+  /* --- Tag Trend --- */
+  const tagTrend = {};
+  data.forEach(r => {
+    const year = r.Tournament?.match(/\b(20\d{2})\b/)?.[1] || "Unknown";
+
+    parseTagsFromString(r.Tags).forEach(tag => {
+      tagTrend[tag] ??= {};
+      tagTrend[tag][year] = (tagTrend[tag][year] || 0) + 1;
+    });
+  });
+
+
+  const top5 = topTags.slice(0,5).map(x=>x[0]);
+  const years = [...new Set(Object.values(tagTrend).flatMap(o=>Object.keys(o)))].sort();
+
+  new Chart(ctxTrend, {
+    type: "line",
+    data: {
+      labels: years,
+      datasets: top5.map(tag => ({
+        label: tag,
+        data: years.map(y=>tagTrend[tag]?.[y] || 0),
+        fill: false
+      }))
+    }
+  });
+}
+
+function renderTournamentTable() {
+  const tbody = document.getElementById("tournamentTable");
+  if (!tbody) return;
+
+  tbody.innerHTML = tournamentData.map(t => `
+    <tr
+      class="hover:bg-gray-50"
+      data-tournament="${tournamentKey(t.Tournament)}"
+    >
+      <td class="px-4 py-2">
+        <a
+          href="#"
+          class="text-blue-600 underline hover:text-blue-800"
+          data-tournament="${tournamentKey(t.Tournament)}"
+          data-tournament-full-name="${t.Tournament || ""}"
+          onclick="jumpToResolution(event)"
+        >
+          ${t.Tournament || ""}
+        </a>
+      </td>
+      <td class="px-4 py-2">${t.Host || ""}</td>
+      <td class="px-4 py-2">${t.Region || ""}</td>
+      <td class="px-4 py-2">${t["Start Date"] || ""}</td>
+      <td class="px-4 py-2">${t["End Date"] || ""}</td>
+      <td class="px-4 py-2">${t["Topic Committee"] || ""}</td>
+      <td class="px-4 py-2">
+        ${renderLink(t.Invite, "Invite")}
+      </td>
+
+      
+    </tr>
+  `).join("");
+}
+
+function renderTagsTable() {
+  const tbody = document.getElementById("tagsTable");
+  if (!tbody) return;
+
+  tbody.innerHTML = tagData.map(t => `
+    <tr class="hover:bg-gray-50">
+      <td class="px-4 py-2">${t.Tag || t.Name || ""}</td>
+      <td class="px-4 py-2">${t.Description || ""}</td>
+      <td class="px-4 py-2 text-right">${t.Count || ""}</td>
+    </tr>
+  `).join("");
+
+}
+
+/* ===============================
+   RANDOMIZER (FULL RESTORE)
+   =============================== */
+function populateRandomizer() {
+  const seasonOpts = new Set();
+  const regionOpts = new Set();
+  const levelOpts = new Set();
+
+  allData.forEach(row => {
+    const rowLevel = getLevel(row);
+    const seasonVal = formatSeasonFromYear(
+      row.Tournament?.match(/\b(20\d{2})\b/)?.[1]
+    );
+
+    const rowTags = parseTagsFromString(row.Tags);
+
+    /* ------------ SEASON OPTIONS ------------
+       Filter by EVERYTHING EXCEPT season
+    */
+    if (
+      (randFilterState.regions.size === 0 || randFilterState.regions.has(row.Region)) &&
+      (randFilterState.tournaments.size === 0 ||
+        randFilterState.tournaments.has(tournamentNameMap.get(row.Tournament) || cleanTournamentName(row.Tournament))) &&
+      matchesDynamicTagRows(rowTags, randFilterState.tagRows, randFilterState.tags, randFilterState.tagFilterType) &&
+      (!randFilterState.level || randFilterState.level === rowLevel)
+    ) {
+      if (seasonVal) seasonOpts.add(seasonVal);
+    }
+
+    /* ------------ REGION OPTIONS ------------
+       Filter by EVERYTHING EXCEPT region
+    */
+    if (
+      (randFilterState.seasons.size === 0 || randFilterState.seasons.has(seasonVal)) &&
+      (randFilterState.tournaments.size === 0 ||
+        randFilterState.tournaments.has(tournamentNameMap.get(row.Tournament) || cleanTournamentName(row.Tournament))) &&
+      matchesDynamicTagRows(rowTags, randFilterState.tagRows, randFilterState.tags, randFilterState.tagFilterType) &&
+      (!randFilterState.level || randFilterState.level === rowLevel)
+    ) {
+      if (row.Region) regionOpts.add(row.Region);
+    }
+
+    /* ------------ TOURNAMENT OPTIONS ------------
+       Filter by EVERYTHING EXCEPT tournament
+    */
+    if (
+      (randFilterState.seasons.size === 0 || randFilterState.seasons.has(seasonVal)) &&
+      (randFilterState.regions.size === 0 || randFilterState.regions.has(row.Region)) &&
+      matchesDynamicTagRows(rowTags, randFilterState.tagRows, randFilterState.tags, randFilterState.tagFilterType) &&
+      (!randFilterState.level || randFilterState.level === rowLevel)
+    ) {
+      // Tournament options are now from tournamentData
+    }
+
+    /* ------------ LEVEL OPTIONS ------------
+       Filter by EVERYTHING EXCEPT level
+    */
+    if (
+      (randFilterState.seasons.size === 0 || randFilterState.seasons.has(seasonVal)) &&
+      (randFilterState.regions.size === 0 || randFilterState.regions.has(row.Region)) &&
+      (randFilterState.tournaments.size === 0 ||
+        randFilterState.tournaments.has(tournamentNameMap.get(row.Tournament) || cleanTournamentName(row.Tournament))) &&
+      matchesDynamicTagRows(rowTags, randFilterState.tagRows, randFilterState.tags, randFilterState.tagFilterType)
+    ) {
+      if (rowLevel) levelOpts.add(rowLevel);
+    }
+  });
+
+  const orderedRandSeasons = [...seasonOpts].sort((a, b) => {
+    const aStart = parseInt(a.split("-")[0], 10);
+    const bStart = parseInt(b.split("-")[0], 10);
+    return aStart - bStart;
+  });
+
+  fillCheckboxMenu(
+    "randSeasonMenu",
+    orderedRandSeasons,
+    randFilterState.seasons,
+    "randSeasonBtn",
+    () => {
+      populateRandomizer();
+    }
+  );
+
+  fillCheckboxMenu(
+    "randRegionMenu",
+    Array.from(regionOpts).sort(),
+    randFilterState.regions,
+    "randRegionBtn",
+    () => {
+      populateRandomizer();
+    }
+  );
+
+  const tournOpts = [...new Set(tournamentData.map(t => t.Name).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+  fillCheckboxMenu(
+    "randTournMenu",
+    tournOpts,
+    randFilterState.tournaments,
+    "randTournBtn",
+    () => {
+      populateRandomizer();
+    }
+  );
+
+  const tagOpts = tagData.map(t => t.Tag || t.Name).filter(Boolean);
+
+  // Update available tags for dynamic rows
+  allAvailableTags = tagOpts;
+
+  fillCheckboxMenu(
+    "randTagMenu",
+    tagOpts,
+    randFilterState.tags,
+    "randTagBtn",
+    () => {
+      populateRandomizer();
+    },
+    { hideAll: randFilterState.tagFilterType === "exclude" }
+  );
+  const levelSelect = document.getElementById("randLevelFilter");
+  const currentLevel = randFilterState.level;
+
+  levelSelect.innerHTML = '<option value="">All</option>';
+
+  [...levelOpts].sort().forEach(lvl => {
+    const opt = document.createElement("option");
+    opt.value = lvl;
+    opt.textContent = lvl;
+    if (lvl === currentLevel) opt.selected = true;
+    levelSelect.appendChild(opt);
+  });
+}
+
+document.getElementById("randLevelFilter")
+  .addEventListener("change", e => {
+    randFilterState.level = e.target.value;
+    populateRandomizer();
+  });
+
+document.getElementById("tagFilterType")
+  .addEventListener("change", e => {
+    filterState.tagFilterType = e.target.value;
+    filterState.exactTournament = null;
+    populateFilters();
+    renderTable(allData, true);
+  });
+
+document.getElementById("randTagFilterType")
+  .addEventListener("change", e => {
+    randFilterState.tagFilterType = e.target.value;
+    populateRandomizer();
+  });
+
+
+document.getElementById("randBtn").addEventListener("click", () => {
+  const filtered = allData.filter(r => {
+    const seasonVal = formatSeasonFromYear(
+      r.Tournament?.match(/\b(20\d{2})\b/)?.[1]
+    );
+
+    const rowTags = parseTagsFromString(r.Tags);
+    const rowLevel = getLevel(r);
+
+    return r.Resolution && r.Resolution.trim() !== ""
+      && (randFilterState.seasons.size === 0 ||
+            randFilterState.seasons.has(seasonVal))
+      && (randFilterState.regions.size === 0 ||
+          randFilterState.regions.has(r.Region))
+      && (randFilterState.tournaments.size === 0 ||
+          randFilterState.tournaments.has(tournamentNameMap.get(r.Tournament) || cleanTournamentName(r.Tournament)))
+      && matchesDynamicTagRows(rowTags, randFilterState.tagRows, randFilterState.tags, randFilterState.tagFilterType)
+      && (!randFilterState.level || randFilterState.level === rowLevel);
+  });
+
+  const quantity = parseInt(document.getElementById("randQuantitySelect").value, 10) || 1;
+  const choices = [];
+  const usedIndices = new Set();
+  
+  // Generate the requested number of resolutions without duplicates
+  for (let i = 0; i < Math.min(quantity, filtered.length); i++) {
+    let index;
+    do {
+      index = Math.floor(Math.random() * filtered.length);
+    } while (usedIndices.has(index));
+    usedIndices.add(index);
+    choices.push(filtered[index]);
+  }
+
+  document.getElementById("randResult").innerHTML =
+    choices.length > 0
+      ? choices.map((choice, idx) => `<div class="mb-3"><b>${idx + 1}. ${choice.Resolution.replace(/\n/g, '<br>')}</b><br><i>${choice.Tournament}</i></div>`).join("")
+      : "No match found.";
+});
+
+/* ===============================
+   DYNAMIC TAG ROWS LOGIC
+   =============================== */
+let allAvailableTags = [];
+
+function updateAvailableTags() {
+  allAvailableTags = tagData.map(t => t.Tag || t.Name).filter(Boolean);
+}
+
+function renderDynamicTagRows() {
+  const container = document.getElementById("dynamicTagContainer");
+  container.innerHTML = "";
+
+  filterState.tagRows.forEach((row, index) => {
+    const rowDiv = document.createElement("div");
+    rowDiv.className = "dynamic-tag-row";
+
+    // Include/Exclude Select
+    const typeSelect = document.createElement("select");
+    typeSelect.innerHTML = `
+      <option value="include">Include</option>
+      <option value="exclude">Exclude</option>
+    `;
+    typeSelect.value = row.type;
+    typeSelect.addEventListener("change", (e) => {
+      filterState.tagRows[index].type = e.target.value;
+        filterState.exactTournament = null;
+      renderDynamicTagRows();
+      populateFilters();
+      renderTable(allData, true);
+    });
+
+    // Tag Dropdown (Checkbox-based, matching other filter UIs)
+    const dropdownDiv = document.createElement("div");
+    dropdownDiv.className = "dropdown";
+    
+    const tagBtn = document.createElement("button");
+    tagBtn.className = "border rounded-lg px-3 py-2 bg-white w-48 text-left";
+    tagBtn.style.borderColor = "#ddd";
+    tagBtn.style.minHeight = "38px";
+    tagBtn.textContent = "Select Tags";
+    
+    const selectedTags = Array.isArray(row.tags) ? [...row.tags] : (row.tags ? [row.tags] : []);
+    const updateButtonText = () => {
+      if (selectedTags.length === 0) {
+        tagBtn.textContent = "Select Tags";
+      } else if (selectedTags.length === allAvailableTags.length) {
+        tagBtn.textContent = "All";
+      } else {
+        tagBtn.textContent = `${selectedTags.length} selected`;
+      }
+    };
+    updateButtonText();
+    
+    const dropdownMenu = document.createElement("div");
+    dropdownMenu.className = "dropdown-content max-h-60 overflow-y-auto";
+    
+    // "All" checkbox (only for Include type, not for Exclude)
+    const updateCheckboxes = () => {
+      dropdownMenu.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        if (cb !== allCb) {
+          cb.checked = selectedTags.includes(cb.value);
+        }
+      });
+      if (allCb) {
+        allCb.checked = selectedTags.length === allAvailableTags.length && allAvailableTags.length > 0;
+        allCb.indeterminate = selectedTags.length > 0 && selectedTags.length < allAvailableTags.length;
+      }
+    };
+    
+    let allCb = null;
+    if (row.type === "include") {
+      const allLabel = document.createElement("label");
+      allLabel.className = "block text-sm cursor-pointer font-semibold pb-1 mb-2 border-b";
+      allCb = document.createElement("input");
+      allCb.type = "checkbox";
+      allCb.className = "mr-2";
+      allCb.checked = selectedTags.length === allAvailableTags.length && allAvailableTags.length > 0;
+      allCb.indeterminate = selectedTags.length > 0 && selectedTags.length < allAvailableTags.length;
+      allCb.addEventListener("change", () => {
+        if (allCb.checked) {
+          selectedTags.length = 0;
+          selectedTags.push(...allAvailableTags);
+        } else {
+          selectedTags.length = 0;
+        }
+        updateButtonText();
+        updateCheckboxes();
+        filterState.tagRows[index].tags = [...selectedTags];
+        filterState.exactTournament = null;
+        populateFilters();
+        renderTable(allData, true);
+      });
+      allLabel.append(allCb, document.createTextNode("All"));
+      dropdownMenu.appendChild(allLabel);
+    }
+    
+    // Individual tag checkboxes
+    allAvailableTags.forEach(tag => {
+      const label = document.createElement("label");
+      label.className = "block text-sm cursor-pointer";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = tag;
+      cb.checked = selectedTags.includes(tag);
+      cb.className = "mr-2";
+      cb.addEventListener("change", () => {
+        if (cb.checked) {
+          if (!selectedTags.includes(tag)) selectedTags.push(tag);
+        } else {
+          const idx = selectedTags.indexOf(tag);
+          if (idx > -1) selectedTags.splice(idx, 1);
+        }
+        updateButtonText();
+        updateCheckboxes();
+        filterState.tagRows[index].tags = [...selectedTags];
+        filterState.exactTournament = null;
+        populateFilters();
+        renderTable(allData, true);
+      });
+      label.append(cb, document.createTextNode(tag));
+      dropdownMenu.appendChild(label);
+    });
+    
+    dropdownDiv.appendChild(tagBtn);
+    dropdownDiv.appendChild(dropdownMenu);
+
+    // Remove Button
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "tag-remove-btn";
+    removeBtn.textContent = "✖";
+    removeBtn.addEventListener("click", () => {
+      filterState.tagRows.splice(index, 1);
+      renderDynamicTagRows();
+        filterState.exactTournament = null;
+      populateFilters();
+      renderTable(allData, true);
+    });
+
+    rowDiv.appendChild(typeSelect);
+    rowDiv.appendChild(dropdownDiv);
+    rowDiv.appendChild(removeBtn);
+    container.appendChild(rowDiv);
+  });
+}
+
+function renderRandDynamicTagRows() {
+  const container = document.getElementById("randDynamicTagContainer");
+  container.innerHTML = "";
+
+  randFilterState.tagRows.forEach((row, index) => {
+    const rowDiv = document.createElement("div");
+    rowDiv.className = "dynamic-tag-row";
+
+    // Include/Exclude Select
+    const typeSelect = document.createElement("select");
+    typeSelect.innerHTML = `
+      <option value="include">Include</option>
+      <option value="exclude">Exclude</option>
+    `;
+    typeSelect.value = row.type;
+    typeSelect.addEventListener("change", (e) => {
+      randFilterState.tagRows[index].type = e.target.value;
+      renderRandDynamicTagRows();
+      populateRandomizer();
+    });
+
+    // Tag Dropdown (Checkbox-based, matching other filter UIs)
+    const dropdownDiv = document.createElement("div");
+    dropdownDiv.className = "dropdown";
+    
+    const tagBtn = document.createElement("button");
+    tagBtn.className = "border rounded-lg px-3 py-2 bg-white w-48 text-left";
+    tagBtn.style.borderColor = "#ddd";
+    tagBtn.style.minHeight = "38px";
+    tagBtn.textContent = "Select Tags";
+    
+    const selectedTags = Array.isArray(row.tags) ? [...row.tags] : (row.tags ? [row.tags] : []);
+    const updateButtonText = () => {
+      if (selectedTags.length === 0) {
+        tagBtn.textContent = "Select Tags";
+      } else if (selectedTags.length === allAvailableTags.length) {
+        tagBtn.textContent = "All";
+      } else {
+        tagBtn.textContent = `${selectedTags.length} selected`;
+      }
+    };
+    updateButtonText();
+    
+    const dropdownMenu = document.createElement("div");
+    dropdownMenu.className = "dropdown-content max-h-60 overflow-y-auto";
+    
+    // "All" checkbox (only for Include type, not for Exclude)
+    const updateCheckboxes = () => {
+      dropdownMenu.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        if (cb !== allCb) {
+          cb.checked = selectedTags.includes(cb.value);
+        }
+      });
+      if (allCb) {
+        allCb.checked = selectedTags.length === allAvailableTags.length && allAvailableTags.length > 0;
+        allCb.indeterminate = selectedTags.length > 0 && selectedTags.length < allAvailableTags.length;
+      }
+    };
+    
+    let allCb = null;
+    if (row.type === "include") {
+      const allLabel = document.createElement("label");
+      allLabel.className = "block text-sm cursor-pointer font-semibold pb-1 mb-2 border-b";
+      allCb = document.createElement("input");
+      allCb.type = "checkbox";
+      allCb.className = "mr-2";
+      allCb.checked = selectedTags.length === allAvailableTags.length && allAvailableTags.length > 0;
+      allCb.indeterminate = selectedTags.length > 0 && selectedTags.length < allAvailableTags.length;
+      allCb.addEventListener("change", () => {
+        if (allCb.checked) {
+          selectedTags.length = 0;
+          selectedTags.push(...allAvailableTags);
+        } else {
+          selectedTags.length = 0;
+        }
+        updateButtonText();
+        updateCheckboxes();
+        randFilterState.tagRows[index].tags = [...selectedTags];
+        populateRandomizer();
+      });
+      allLabel.append(allCb, document.createTextNode("All"));
+      dropdownMenu.appendChild(allLabel);
+    }
+    
+    // Individual tag checkboxes
+    allAvailableTags.forEach(tag => {
+      const label = document.createElement("label");
+      label.className = "block text-sm cursor-pointer";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = tag;
+      cb.checked = selectedTags.includes(tag);
+      cb.className = "mr-2";
+      cb.addEventListener("change", () => {
+        if (cb.checked) {
+          if (!selectedTags.includes(tag)) selectedTags.push(tag);
+        } else {
+          const idx = selectedTags.indexOf(tag);
+          if (idx > -1) selectedTags.splice(idx, 1);
+        }
+        updateButtonText();
+        updateCheckboxes();
+        randFilterState.tagRows[index].tags = [...selectedTags];
+        populateRandomizer();
+      });
+      label.append(cb, document.createTextNode(tag));
+      dropdownMenu.appendChild(label);
+    });
+    
+    dropdownDiv.appendChild(tagBtn);
+    dropdownDiv.appendChild(dropdownMenu);
+
+    // Remove Button
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "tag-remove-btn";
+    removeBtn.textContent = "✖";
+    removeBtn.addEventListener("click", () => {
+      randFilterState.tagRows.splice(index, 1);
+      renderRandDynamicTagRows();
+      populateRandomizer();
+    });
+
+    rowDiv.appendChild(typeSelect);
+    rowDiv.appendChild(dropdownDiv);
+    rowDiv.appendChild(removeBtn);
+    container.appendChild(rowDiv);
+  });
+}
+
+document.getElementById("addTagBtn").addEventListener("click", () => {
+  // Add a new row with empty tags array (user can select multiple)
+  filterState.tagRows.push({ type: "include", tags: [] });
+    filterState.exactTournament = null;
+  renderDynamicTagRows();
+  populateFilters();
+  renderTable(allData, true);
+});
+
+document.getElementById("randAddTagBtn").addEventListener("click", () => {
+  // Add a new row with empty tags array (user can select multiple)
+  randFilterState.tagRows.push({ type: "include", tags: [] });
+  renderRandDynamicTagRows();
+  populateRandomizer();
+});
+
+
+/* ===============================
+   TAB SWITCHING
+   =============================== */
+const tabRes=document.getElementById("tabRes"),
+      tabAna=document.getElementById("tabAna"),
+      tabRand=document.getElementById("tabRand");
+const secRes=document.getElementById("resTab"),
+      secAna=document.getElementById("anaTab"),
+      secRand=document.getElementById("randTab");
+const tabTour = document.getElementById("tabTour");
+const tabTags = document.getElementById("tabTags");
+
+const secTour = document.getElementById("tourTab");
+const secTags = document.getElementById("tagsTab");
+const slider=document.getElementById("slider");
+
+function showTab(tab){
+  [secRes, secAna, secRand, secTour, secTags].forEach(s =>
+    s.classList.add("hidden")
+  );
+
+  [tabRes, tabAna, tabRand, tabTour, tabTags].forEach(b =>
+    b.classList.remove("active")
+  );
+
+
+  if(tab==="res"){secRes.classList.remove("hidden");tabRes.classList.add("active");if (slider) slider.style.transform="translateX(0%)";}
+  if(tab==="ana"){secAna.classList.remove("hidden");tabAna.classList.add("active");if (slider) slider.style.transform="translateX(100%)";}
+  if(tab==="rand"){
+    secRand.classList.remove("hidden");
+    tabRand.classList.add("active");
+    populateRandomizer();
+    renderRandDynamicTagRows();
+    if (slider) slider.style.transform="translateX(200%)";
+  }
+  if (tab === "tour") {
+    secTour.classList.remove("hidden");
+    tabTour.classList.add("active");
+    if (slider) slider.style.transform = "translateX(300%)";
+  }
+
+  if (tab === "tags") {
+    secTags.classList.remove("hidden");
+    tabTags.classList.add("active");
+    if (slider) slider.style.transform = "translateX(400%)";
+  }
+
+}
+
+tabRes.onclick=()=>showTab("res");
+tabAna.onclick=()=>showTab("ana");
+tabRand.onclick=()=>showTab("rand");
+tabTour.onclick = () => showTab("tour");
+tabTags.onclick = () => showTab("tags");
+
+document.addEventListener("DOMContentLoaded", fetchData);
+</script>
