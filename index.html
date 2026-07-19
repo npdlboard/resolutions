@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,8 +21,15 @@
       transition: background-color 0.5s ease;
     }
 
-    body { font-family: 'Inter', sans-serif; color: var(--npdl-text); background-color: var(--npdl-gray); }
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--npdl-text);
+      background-color: var(--npdl-gray);
+      overflow-x: hidden;
+    }
     header { background-color: var(--npdl-navy); color: white; }
+    canvas { max-width: 100% !important; height: auto !important; }
+    table { width: 100%; }
     .tab-btn.active { border-bottom: 3px solid var(--npdl-blue); color: var(--npdl-blue); }
     .tab-slider { transition: transform 0.3s ease; height: 3px; background: var(--npdl-blue); position: absolute; bottom: 0; left: 0; }
     .dropdown { position: relative; display: inline-block; }
@@ -38,6 +46,42 @@
       padding: 0.5rem;
     }
     .dropdown:hover .dropdown-content { display: block; }
+
+    .tab-btn {
+      white-space: nowrap;
+    }
+
+    @media (max-width: 640px) {
+      .dropdown {
+        display: block;
+        width: 100%;
+      }
+      .dropdown-content {
+        right: auto;
+        left: 0;
+        width: 100%;
+        min-width: 0;
+      }
+      .tab-btn {
+        flex: 1 1 calc(50% - 0.25rem);
+        min-width: 0;
+        text-align: center;
+      }
+      .dynamic-tag-row {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+      }
+      .dynamic-tag-row > * {
+        width: 100%;
+      }
+      main {
+        padding: 1rem;
+      }
+      .tab-section {
+        min-width: 0;
+      }
+    }
 
     /* Dynamic Tag Rows Styles */
     .dynamic-tag-row {
@@ -75,11 +119,11 @@
 </head>
 
 <body class="min-h-screen flex flex-col">
-<header class="p-4 flex justify-between items-center shadow-md">
-  <h1 class="text-2xl font-bold">Parli Resolutions Explorer</h1>
+<header class="p-4 flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center shadow-md">
+  <h1 class="text-xl sm:text-2xl font-bold text-center sm:text-left">Parli Resolutions Explorer</h1>
 </header>
 
-<nav class="relative flex justify-center mt-4 border-b border-gray-300">
+<nav class="relative mt-4 border-b border-gray-300 flex flex-wrap justify-center gap-1 sm:gap-2 px-2 sm:px-4">
   <button id="tabRes" class="tab-btn px-4 py-2 font-semibold active">Resolutions</button>
   <button id="tabRand" class="tab-btn px-4 py-2 font-semibold">Randomizer</button>
   <button id="tabTour" class="tab-btn px-4 py-2 font-semibold">Tournaments</button>
@@ -112,98 +156,92 @@
     ← Back to Tournament
   </div>
 
-  <!-- FILTERS (UNCHANGED) -->
+  <!-- FILTERS -->
   <div class="flex flex-wrap gap-3 mb-4">
     <input id="searchInput" type="text" placeholder="Search resolutions..."
       class="border rounded-lg px-3 py-2 w-full sm:w-64" />
-    <div>
-  <label class="block text-xs font-semibold mb-1">Season</label>
-  <div class="dropdown">
-    <button
-      id="seasonFilterBtn"
-      class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
-      All
-    </button>
-    <div
-      id="seasonFilterMenu"
-      class="dropdown-content max-h-60 overflow-y-auto">
-    </div>
-  </div>
-
-</div>
-
-    <div>
-  <label class="block text-xs font-semibold mb-1">Region</label>
-  <div class="dropdown">
-    <button
-      id="regionFilterBtn"
-      class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
-      All
-    </button>
-    <div
-      id="regionFilterMenu"
-      class="dropdown-content max-h-60 overflow-y-auto">
-    </div>
-  </div>
-
-</div>
-
-    <div>
-  <label class="block text-xs font-semibold mb-1">Tournament</label>
-  <div class="dropdown">
-    <button
-      id="tournFilterBtn"
-      class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
-      All
-    </button>
-    <div
-      id="tournFilterMenu"
-      class="dropdown-content max-h-60 overflow-y-auto">
-    </div>
-  </div>
-
-</div>
-
-    <div>
-  <label class="block text-xs font-semibold mb-1">Tag</label>
-  <div class="dynamic-tag-row flex gap-2 items-center">
-    <select id="tagFilterType" class="border rounded-lg px-3 py-2 bg-white">
-      <option value="include">Include</option>
-      <option value="exclude">Exclude</option>
-    </select>
-    <div class="dropdown">
-      <button
-        id="tagFilterBtn"
-        class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
-        All
-      </button>
-      <div
-        id="tagFilterMenu"
-        class="dropdown-content max-h-60 overflow-y-auto">
+    <div class="w-full sm:w-auto">
+      <label class="block text-xs font-semibold mb-1">Season</label>
+      <div class="dropdown">
+        <button
+          id="seasonFilterBtn"
+          class="border rounded-lg px-3 py-2 bg-white w-full sm:w-48 text-left">
+          All
+        </button>
+        <div
+          id="seasonFilterMenu"
+          class="dropdown-content max-h-60 overflow-y-auto">
+        </div>
       </div>
     </div>
-    <button
-      id="addTagBtn"
-      class="border rounded-lg px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 w-fit mt-0">
-      Add Tag
-    </button>
-  </div>
-  <div id="dynamicTagContainer" class="mt-3 flex flex-col gap-2"></div>
-</div>
 
-<div>
-  <label class="block text-xs font-semibold mb-1">Level</label>
-  <select id="levelFilter" class="border rounded-lg px-3 py-2">
-    <option value="">All</option>
-  </select>
+    <div class="w-full sm:w-auto">
+      <label class="block text-xs font-semibold mb-1">Region</label>
+      <div class="dropdown">
+        <button
+          id="regionFilterBtn"
+          class="border rounded-lg px-3 py-2 bg-white w-full sm:w-48 text-left">
+          All
+        </button>
+        <div
+          id="regionFilterMenu"
+          class="dropdown-content max-h-60 overflow-y-auto">
+        </div>
+      </div>
+    </div>
 
-</div>
+    <div class="w-full sm:w-auto">
+      <label class="block text-xs font-semibold mb-1">Tournament</label>
+      <div class="dropdown">
+        <button
+          id="tournFilterBtn"
+          class="border rounded-lg px-3 py-2 bg-white w-full sm:w-48 text-left">
+          All
+        </button>
+        <div
+          id="tournFilterMenu"
+          class="dropdown-content max-h-60 overflow-y-auto">
+        </div>
+      </div>
+    </div>
 
+    <div class="w-full sm:w-auto">
+      <label class="block text-xs font-semibold mb-1">Tag</label>
+      <div class="dynamic-tag-row flex flex-col gap-2 items-stretch sm:flex-row sm:items-center">
+        <select id="tagFilterType" class="border rounded-lg px-3 py-2 bg-white w-full sm:w-36">
+          <option value="include">Include</option>
+          <option value="exclude">Exclude</option>
+        </select>
+        <div class="dropdown">
+          <button
+            id="tagFilterBtn"
+            class="border rounded-lg px-3 py-2 bg-white w-full sm:w-48 text-left">
+            All
+          </button>
+          <div
+            id="tagFilterMenu"
+            class="dropdown-content max-h-60 overflow-y-auto">
+          </div>
+        </div>
+        <button
+          id="addTagBtn"
+          class="border rounded-lg px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 w-full sm:w-auto mt-0">
+          Add Tag
+        </button>
+      </div>
+      <div id="dynamicTagContainer" class="mt-3 flex flex-col gap-2"></div>
+    </div>
 
+    <div class="w-full sm:w-auto">
+      <label class="block text-xs font-semibold mb-1">Level</label>
+      <select id="levelFilter" class="border rounded-lg px-3 py-2 w-full sm:w-auto">
+        <option value="">All</option>
+      </select>
+    </div>
   </div>
 
   <!-- COLUMN MENU -->
-  <div class="flex justify-end mb-2">
+  <div class="flex justify-start sm:justify-end mb-2">
     <div class="dropdown">
       <button class="bg-[var(--npdl-blue)] text-white font-semibold px-3 py-1 rounded-md">Add Details</button>
       <div class="dropdown-content text-sm">
@@ -290,101 +328,96 @@
 <!-- RANDOMIZER TAB -->
 <!-- ========================= -->
 <section id="randTab" class="tab-section hidden">
-  <div class="bg-white rounded-lg p-6 shadow-md max-w-xl mx-auto">
+  <div class="bg-white rounded-lg p-6 shadow-md max-w-xl mx-auto w-full">
     <h2 class="text-xl font-bold mb-4 text-center">Resolution Randomizer</h2>
-    <div class="flex flex-wrap gap-3 justify-center mb-4">
-      <div>
-  <label class="block text-xs font-semibold mb-1">Season</label>
-    <div class="dropdown">
-    <button
-      id="randSeasonBtn"
-      class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
-      All
-    </button>
-    <div
-      id="randSeasonMenu"
-      class="dropdown-content max-h-60 overflow-y-auto">
-    </div>
-</div>
-
-</div>
-
-      <div>
-  <label class="block text-xs font-semibold mb-1">Region</label>
-<div class="dropdown">
-  <button
-    id="randRegionBtn"
-    class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
-    All
-  </button>
-  <div
-    id="randRegionMenu"
-    class="dropdown-content max-h-60 overflow-y-auto">
-  </div>
-</div>
-
-</div>
-
-      <div>
-  <label class="block text-xs font-semibold mb-1">Tournament</label>
-<div class="dropdown">
-  <button
-    id="randTournBtn"
-    class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
-    All
-  </button>
-  <div
-    id="randTournMenu"
-    class="dropdown-content max-h-60 overflow-y-auto">
-  </div>
-</div>
-
-</div>
-
-      <div>
-  <label class="block text-xs font-semibold mb-1">Tag</label>
-  <div class="dynamic-tag-row flex gap-2 items-center">
-    <select id="randTagFilterType" class="border rounded-lg px-3 py-2 bg-white">
-      <option value="include">Include</option>
-      <option value="exclude">Exclude</option>
-    </select>
-    <div class="dropdown">
-      <button
-        id="randTagBtn"
-        class="border rounded-lg px-3 py-2 bg-white w-48 text-left">
-        All
-      </button>
-      <div
-        id="randTagMenu"
-        class="dropdown-content max-h-60 overflow-y-auto">
+    <div class="flex flex-col items-center gap-3 mb-4">
+      <div class="w-full max-w-xs">
+        <label class="block text-xs font-semibold mb-1">Season</label>
+        <div class="dropdown w-full">
+          <button
+            id="randSeasonBtn"
+            class="border rounded-lg px-3 py-2 bg-white w-full text-left">
+            All
+          </button>
+          <div
+            id="randSeasonMenu"
+            class="dropdown-content max-h-60 overflow-y-auto">
+          </div>
+        </div>
       </div>
-    </div>
-    <button
-      id="randAddTagBtn"
-      class="border rounded-lg px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 w-fit mt-0">
-      Add Tag
-    </button>
-  </div>
-  <!-- Dynamic Tag Rows Container for Randomizer -->
-  <div id="randDynamicTagContainer" class="mt-3 flex flex-col gap-2"></div>
-</div>
 
-      <div>
-  <label class="block text-xs font-semibold mb-1">Level</label>
-  <select id="randLevelFilter" class="border rounded-lg px-3 py-2 bg-white w-48">
-    <option value="">All</option>
-  </select>
-</div>
+      <div class="w-full max-w-xs">
+        <label class="block text-xs font-semibold mb-1">Region</label>
+        <div class="dropdown w-full">
+          <button
+            id="randRegionBtn"
+            class="border rounded-lg px-3 py-2 bg-white w-full text-left">
+            All
+          </button>
+          <div
+            id="randRegionMenu"
+            class="dropdown-content max-h-60 overflow-y-auto">
+          </div>
+        </div>
+      </div>
 
-      <div>
-  <label class="block text-xs font-semibold mb-1">Number of Resolutions</label>
-  <select id="randQuantitySelect" class="border rounded-lg px-3 py-2 bg-white w-48">
-    <option value="1">One</option>
-    <option value="2">Two</option>
-    <option value="3">Three</option>
-  </select>
-</div>
+      <div class="w-full max-w-xs">
+        <label class="block text-xs font-semibold mb-1">Tournament</label>
+        <div class="dropdown w-full">
+          <button
+            id="randTournBtn"
+            class="border rounded-lg px-3 py-2 bg-white w-full text-left">
+            All
+          </button>
+          <div
+            id="randTournMenu"
+            class="dropdown-content max-h-60 overflow-y-auto">
+          </div>
+        </div>
+      </div>
 
+      <div class="w-full max-w-xs">
+        <label class="block text-xs font-semibold mb-1">Level</label>
+        <select id="randLevelFilter" class="border rounded-lg px-3 py-2 bg-white w-full">
+          <option value="">All</option>
+        </select>
+      </div>
+
+      <div class="w-full max-w-xs">
+        <label class="block text-xs font-semibold mb-1">Tag</label>
+        <div class="dynamic-tag-row flex flex-col gap-2 items-stretch sm:flex-row sm:items-center">
+          <select id="randTagFilterType" class="border rounded-lg px-3 py-2 bg-white w-full sm:w-36">
+            <option value="include">Include</option>
+            <option value="exclude">Exclude</option>
+          </select>
+          <div class="dropdown">
+            <button
+              id="randTagBtn"
+              class="border rounded-lg px-3 py-2 bg-white w-full sm:w-48 text-left">
+              All
+            </button>
+            <div
+              id="randTagMenu"
+              class="dropdown-content max-h-60 overflow-y-auto">
+            </div>
+          </div>
+          <button
+            id="randAddTagBtn"
+            class="border rounded-lg px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 w-full sm:w-auto mt-0">
+            Add Tag
+          </button>
+        </div>
+        <div id="randDynamicTagContainer" class="mt-3 flex flex-col gap-2"></div>
+      </div>
+
+      <div class="w-full max-w-xs">
+        <label class="block text-xs font-semibold mb-1">Number of Resolutions</label>
+        <select id="randQuantitySelect" class="border rounded-lg px-3 py-2 bg-white w-full">
+          <option value="1">One</option>
+          <option value="2">Two</option>
+          <option value="3">Three</option>
+        </select>
+      </div>
     </div>
 
     <div class="text-center">
@@ -790,7 +823,9 @@ const columnState = {
    =============================== */
 async function fetchData() {
   try {
-    const res = await fetch(`${APPS_SCRIPT_URL}?token=${API_TOKEN}`);
+    const res = await fetch(
+      'https://CodingCatFmt.github.io/npdl-resolutions-database/database.json'
+    );
     const json = await res.json();
 
     if (!json.entry || !Array.isArray(json.entry)) {
