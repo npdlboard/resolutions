@@ -793,7 +793,7 @@ const columnState = {
 async function fetchData() {
   try {
     const res = await fetch(
-      'https://CodingCatFmt.github.io/npdl-resolutions-database/database.json'
+      './database.json'
     );
     const json = await res.json();
 
@@ -1060,16 +1060,6 @@ function normalizeApostrophes(str) {
   s = s.replace(/([A-Za-z0-9])\?([A-Za-z0-9])/g, "$1'$2");
   return s;
 }
-function matchesTagFilter(rowTags, selectedTags, mode) {
-  if (selectedTags.size === 0) return true;
-
-  if (mode === "AND") {
-    return [...selectedTags].every(t => rowTags.includes(t));
-  }
-
-  return rowTags.some(t => selectedTags.has(t));
-}
-
 function matchesDynamicTagRows(rowTags, tagRows, mainTagSet = filterState.tags, mainTagType = filterState.tagFilterType) {
   const excludeRows = tagRows.filter(r => r.type === "exclude");
   for (const row of excludeRows) {
@@ -1103,38 +1093,6 @@ function matchesDynamicTagRows(rowTags, tagRows, mainTagSet = filterState.tags, 
   }
 
   return true;
-}
-
-function sortTagsNonRegionFirst(tags) {
-  const regionTags = getRegionTagsFromTagData();
-
-  const nonRegion = [];
-  const region = [];
-
-  tags.forEach(tag => {
-    if (regionTags.has(tag)) {
-      region.push(tag);
-    } else {
-      nonRegion.push(tag);
-    }
-  });
-
-  nonRegion.sort((a, b) => a.localeCompare(b));
-  region.sort((a, b) => a.localeCompare(b));
-
-  return [...nonRegion, ...region];
-}
-
-function getRegionTagsFromTagData() {
-  if (!Array.isArray(tagData) || tagData.length < 7) return new Set();
-
-  const lastSeven = tagData.slice(-7);
-
-  return new Set(
-    lastSeven
-      .map(t => t.Tag || t.Name)
-      .filter(Boolean)
-  );
 }
 
 
@@ -1570,13 +1528,10 @@ document.getElementById("randBtn").addEventListener("click", () => {
     choices.push(filtered[index]);
   }
 
-  document.getElementById("randResult").innerHTML =
-    choices.length > 0
-      ? choices.map((choice, idx) => `<div class="mb-3"><b>${idx + 1}. ${choice.Resolution.replace(/\n/g, '<br>')}</b><br><i>${choice.Tournament}</i></div>`).join("")
-      : "No match found.";
-  
   if (choices.length > 0) {
-    document.getElementById("randResult").innerHTML = choices.map((choice, idx) => `\n      <div class="mb-3"><b>${idx + 1}. ${normalizeApostrophes((choice.Resolution || "")).replace(/\n/g, '<br>')}</b><br><i>${normalizeApostrophes(choice.Tournament || "")}</i></div>`).join("");
+    document.getElementById("randResult").innerHTML = choices.map((choice, idx) => `<div class="mb-3"><b>${idx + 1}. ${normalizeApostrophes((choice.Resolution || "")).replace(/\n/g, '<br>')}</b><br><i>${normalizeApostrophes(choice.Tournament || "")}</i></div>`).join("");
+  } else {
+    document.getElementById("randResult").innerHTML = "No match found.";
   }
 });
 
