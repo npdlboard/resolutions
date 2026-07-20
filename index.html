@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,7 +30,6 @@
     canvas { max-width: 100% !important; height: auto !important; }
     table { width: 100%; }
     .tab-btn.active { border-bottom: 3px solid var(--npdl-blue); color: var(--npdl-blue); }
-    .tab-slider { transition: transform 0.3s ease; height: 3px; background: var(--npdl-blue); position: absolute; bottom: 0; left: 0; }
     .dropdown { position: relative; display: inline-block; }
     .dropdown-content {
       display: none;
@@ -83,7 +81,7 @@
       }
     }
 
-    /* Dynamic Tag Rows Styles */
+    
     .dynamic-tag-row {
       display: flex;
       gap: 10px;
@@ -144,9 +142,7 @@
   </div>
 </div>
 
-<!-- ========================= -->
 <!-- RESOLUTIONS TAB -->
-<!-- ========================= -->
 <section id="resTab" class="tab-section block">
 
   <div
@@ -156,7 +152,7 @@
     ← Back to Tournament
   </div>
 
-  <!-- FILTERS -->
+  
   <div class="flex flex-wrap gap-3 mb-4">
     <input id="searchInput" type="text" placeholder="Search resolutions..."
       class="border rounded-lg px-3 py-2 w-full sm:w-64" />
@@ -240,7 +236,7 @@
     </div>
   </div>
 
-  <!-- COLUMN MENU -->
+  
   <div class="flex justify-start sm:justify-end mb-2">
     <div class="dropdown">
       <button class="bg-[var(--npdl-blue)] text-white font-semibold px-3 py-1 rounded-md">Add Details</button>
@@ -260,10 +256,10 @@
     </div>
   </div>
 
-  <!-- TABLE -->
+  
   <div id="resTableWrapper" class="relative overflow-x-auto border rounded-lg bg-white shadow-sm">
 
-  <!-- TABLE LOADING OVERLAY -->
+  
   <div id="tableLoadingOverlay"
        class="hidden absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-10">
     <div class="flex flex-col items-center">
@@ -292,9 +288,7 @@
   </div>
 </section>
 
-<!-- ========================= -->
 <!-- ANALYTICS TAB -->
-<!-- ========================= -->
 <section id="anaTab" class="tab-section hidden">
   <div class="grid gap-6 md:grid-cols-2">
     <div class="bg-white p-4 rounded-lg shadow-md">
@@ -324,9 +318,7 @@
   </div>
 </section>
 
-<!-- ========================= -->
 <!-- RANDOMIZER TAB -->
-<!-- ========================= -->
 <section id="randTab" class="tab-section hidden">
   <div class="bg-white rounded-lg p-6 shadow-md max-w-xl mx-auto w-full">
     <h2 class="text-xl font-bold mb-4 text-center">Resolution Randomizer</h2>
@@ -427,9 +419,7 @@
   </div>
 </section>
 
-<!-- ========================= -->
 <!-- TOURNAMENTS TAB -->
-<!-- ========================= -->
 <section id="tourTab" class="tab-section hidden">
   <div
     id="backToResolution"
@@ -456,9 +446,7 @@
   </div>
 </section>
 
-<!-- ========================= -->
 <!-- TAGS TAB -->
-<!-- ========================= -->
 <section id="tagsTab" class="tab-section hidden">
   <div class="overflow-x-auto border rounded-lg bg-white shadow-sm">
     <table class="min-w-full text-sm text-left">
@@ -489,9 +477,6 @@
   Built with ❤️ by Vyomesh · Powered by Google Sheets
 </footer>
 <script>
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzj0kM6bFgO0zNC0B8__W7J4a5x93PUHnAWeBjB89BvzLBhpR9Fn8oyND0cnfY4a_15_w/exec";
-const API_TOKEN = "ajZI13Udb345gEdkcse32lFN";
-
 let allData = [];
 let filteredData = [];
 let tournamentData = [];
@@ -508,11 +493,7 @@ const filterState = {
   tagFilterType: "include",
   tagRows: [], // Array of {type: 'include'|'exclude', tag: string}
   level: "",
-  exactTournament: null, // For filtering to a specific tournament instance
-
-  randSeasons: new Set(),
-  randRegions: new Set(),
-  randTags: new Set()
+  exactTournament: null // For filtering to a specific tournament instance
 };
 
 const randFilterState = {
@@ -583,7 +564,6 @@ function jumpToTournament(e) {
 
   showTab("tour");
 
-  // Let the tab render before scrolling
   setTimeout(() => {
     const row = document.querySelector(
       `#tournamentTable tr[data-tournament="${key}"]`
@@ -610,7 +590,6 @@ function jumpToResolution(e) {
   const tournamentName = e.currentTarget.dataset.tournamentFullName || "";
   if (!tournamentName) return;
 
-  // Clear other filters and set exact tournament
   filterState.seasons.clear();
   filterState.regions.clear();
   filterState.tags.clear();
@@ -621,7 +600,6 @@ function jumpToResolution(e) {
 
   showTab("res");
 
-  // Let the tab render before updating filters and table
   setTimeout(() => {
     populateFilters();
     renderTable(allData, true);
@@ -659,7 +637,6 @@ document
   ?.addEventListener("click", () => {
     if (!lastTournamentKey) return;
 
-    // Clear the exact tournament filter to restore normal view
     filterState.exactTournament = null;
     populateFilters();
     renderTable(allData, true);
@@ -684,9 +661,8 @@ function fillCheckboxMenu(menuId, values, stateSet, btnId, onChange, options = {
   const menu = document.getElementById(menuId);
   const btn = document.getElementById(btnId);
   menu.innerHTML = "";
-  const hideAll = options.hideAll === true || btnId === "excludeTagFilterBtn";
+  const hideAll = options.hideAll === true;
 
-  // Add "All" option at the top (except for exclude filters)
   if (!hideAll) {
     const allLabel = document.createElement("label");
     allLabel.className = "block text-sm cursor-pointer font-semibold pb-1 mb-2 border-b";
@@ -695,7 +671,6 @@ function fillCheckboxMenu(menuId, values, stateSet, btnId, onChange, options = {
     allCb.type = "checkbox";
     allCb.className = "mr-2";
     
-    // "All" is checked when all items are selected
     const updateAllCheckbox = () => {
       allCb.checked = values.length > 0 && values.every(v => stateSet.has(v));
       allCb.indeterminate = stateSet.size > 0 && stateSet.size < values.length;
@@ -705,10 +680,10 @@ function fillCheckboxMenu(menuId, values, stateSet, btnId, onChange, options = {
     
     allCb.addEventListener("change", () => {
       if (allCb.checked) {
-        // Select all items
+      
         values.forEach(v => stateSet.add(v));
       } else {
-        // Deselect all items
+      
         stateSet.clear();
       }
       
@@ -747,8 +722,6 @@ function fillCheckboxMenu(menuId, values, stateSet, btnId, onChange, options = {
       } else {
         btn.textContent = `${stateSet.size} selected`;
       }
-    } else if (btnId === "excludeTagFilterBtn") {
-      btn.textContent = stateSet.size ? `${stateSet.size} selected` : "None";
     } else {
       if (stateSet.size === 0) {
         btn.textContent = "All";
@@ -803,9 +776,7 @@ function fillCheckboxMenu(menuId, values, stateSet, btnId, onChange, options = {
 
 
 
-/* ===============================
-   COLUMN STATE
-   =============================== */
+ 
 const columnState = {
   "Rd": true,
   "Novice Rd": false,
@@ -818,12 +789,12 @@ const columnState = {
   "Opp Ballots": false
 };
 
-/* ===============================
-   FETCH DATA
-   =============================== */
+ 
 async function fetchData() {
   try {
-    const res = await fetch('./database.json');
+    const res = await fetch(
+      'https://CodingCatFmt.github.io/npdl-resolutions-database/database.json'
+    );
     const json = await res.json();
 
     if (!json.entry || !Array.isArray(json.entry)) {
@@ -852,9 +823,7 @@ async function fetchData() {
   }
 }
 
-/* ===============================
-   FILTER POPULATION (UNCHANGED)
-   =============================== */
+ 
 function populateFilters() {
   const seasonOpts = new Set();
   const regionOpts = new Set();
@@ -869,9 +838,7 @@ function populateFilters() {
     const rowTags = parseTagsFromString(row.Tags);
 
 
-    /* ---------------- SEASON OPTIONS ----------------
-       Filter by EVERYTHING EXCEPT season
-    */
+    
     if (
       (filterState.regions.size === 0 || filterState.regions.has(row.Region)) &&
       (filterState.tournaments.size === 0 ||
@@ -882,9 +849,7 @@ function populateFilters() {
       if (seasonVal) seasonOpts.add(seasonVal);
     }
 
-    /* ---------------- REGION OPTIONS ----------------
-       Filter by EVERYTHING EXCEPT region
-    */
+    
     if (
       (filterState.seasons.size === 0 || filterState.seasons.has(seasonVal)) &&
       (filterState.tournaments.size === 0 ||
@@ -896,9 +861,7 @@ function populateFilters() {
       if (row.Region) regionOpts.add(row.Region);
     }
 
-    /* -------------- TOURNAMENT OPTIONS --------------
-       Filter by EVERYTHING EXCEPT tournament
-    */
+    
     if (
       (filterState.seasons.size === 0 || filterState.seasons.has(seasonVal)) &&
       (filterState.regions.size === 0 || filterState.regions.has(row.Region)) &&
@@ -906,12 +869,10 @@ function populateFilters() {
         && (!filterState.level || filterState.level === rowLevel)
 
     ) {
-      // Tournament options are now from tournamentData
+      
     }
 
-    /* ---------------- LEVEL OPTIONS ----------------
-       Filter by EVERYTHING EXCEPT level
-    */
+    
     if (
       (filterState.seasons.size === 0 || filterState.seasons.has(seasonVal)) &&
       (filterState.regions.size === 0 || filterState.regions.has(row.Region)) &&
@@ -955,7 +916,7 @@ function populateFilters() {
 
   const tagOpts = tagData.map(t => t.Tag || t.Name).filter(Boolean);
 
-  // Update available tags for dynamic rows
+  
   allAvailableTags = tagOpts;
 
   fillCheckboxMenu(
@@ -985,9 +946,7 @@ function populateFilters() {
 
 
 
-/* ===============================
-   TABLE RENDERING
-   =============================== */
+ 
 function renderTable(data, reset = true) {
   showTableLoading();
 
@@ -998,7 +957,7 @@ function renderTable(data, reset = true) {
   if (reset) {
     filteredData = data.filter(matchesFilter);
 
-    // Hide back button if exactTournament is cleared
+    
     const backLink = document.getElementById("backToTournament");
     if (backLink && !filterState.exactTournament) {
       backLink.classList.add("hidden");
@@ -1012,7 +971,7 @@ function renderTable(data, reset = true) {
     >
       ${columnState["Rd"] ? `<td class="px-4 py-2">${r.Rd || ""}</td>` : ""}
       ${columnState["Novice Rd"] ? `<td class="px-4 py-2">${r["N/JV"] || ""}</td>` : ""}
-      <td class="px-4 py-2">${(r.Resolution || "").replace(/\n/g, '<br>')}</td>
+      <td class="px-4 py-2">${normalizeApostrophes((r.Resolution || "")).replace(/\n/g, '<br>')}</td>
       ${columnState["Tournament"] ? `
         <td class="px-4 py-2">
           <a
@@ -1022,12 +981,12 @@ function renderTable(data, reset = true) {
             data-resolution="${resolutionKey(r)}"
             onclick="jumpToTournament(event)"
           >
-            ${r.Tournament || ""}
+            ${normalizeApostrophes(r.Tournament || "")}
           </a>
         </td>
       ` : ""}
 
-      ${columnState["Note"] ? `<td class="px-4 py-2">${(r.Note || "").replace(/\n/g, '<br>')}</td>` : ""}
+      ${columnState["Note"] ? `<td class="px-4 py-2">${normalizeApostrophes((r.Note || "")).replace(/\n/g, '<br>')}</td>` : ""}
       ${columnState["Gov Wins"] ? `<td class="px-4 py-2">${r["Gov Wins"] ?? ""}</td>` : ""}
       ${columnState["Opp Wins"] ? `<td class="px-4 py-2">${r["Opp Wins"] ?? ""}</td>` : ""}
       ${columnState["Gov Ballots"] ? `<td class="px-4 py-2">${r["Gov Ballots"] ?? ""}</td>` : ""}
@@ -1045,9 +1004,7 @@ function renderTable(data, reset = true) {
 }
 
 
-/* ===============================
-   COLUMN TOGGLES
-   =============================== */
+ 
 document.querySelectorAll(".colToggle").forEach(cb => {
   cb.checked = !!columnState[cb.dataset.col];
   cb.addEventListener("change", () => {
@@ -1094,6 +1051,15 @@ function parseTagsFromString(tagString) {
     .map(t => t.trim())
     .filter(Boolean);
 }
+function normalizeApostrophes(str) {
+  if (str == null) return str;
+  let s = String(str);
+  s = s.replace(/[\u2018\u2019\u201B\u2032\uFF07]/g, "'");
+  s = s.replace(/â€™|â€˜|â€™/g, "'");
+  s = s.replace(/([A-Za-z0-9])\uFFFD([A-Za-z0-9])/g, "$1'$2");
+  s = s.replace(/([A-Za-z0-9])\?([A-Za-z0-9])/g, "$1'$2");
+  return s;
+}
 function matchesTagFilter(rowTags, selectedTags, mode) {
   if (selectedTags.size === 0) return true;
 
@@ -1101,31 +1067,24 @@ function matchesTagFilter(rowTags, selectedTags, mode) {
     return [...selectedTags].every(t => rowTags.includes(t));
   }
 
-  // OR (default)
   return rowTags.some(t => selectedTags.has(t));
 }
 
 function matchesDynamicTagRows(rowTags, tagRows, mainTagSet = filterState.tags, mainTagType = filterState.tagFilterType) {
-  // Check exclude conditions (these always apply if present)
   const excludeRows = tagRows.filter(r => r.type === "exclude");
   for (const row of excludeRows) {
-    // Exclude: row should NOT have ANY of these tags
     const tags = Array.isArray(row.tags) ? row.tags : [row.tags];
     if (tags.some(tag => rowTags.includes(tag))) {
       return false;
     }
   }
 
-  // If there are exclude rows and the resolution has no tags, exclude it
-  // (since it doesn't contribute meaningfully to exclude filtering)
   if (excludeRows.length > 0 && rowTags.length === 0) {
     return false;
   }
 
-  // Check include conditions (at least one tag from each include row must be present)
   const includeRows = tagRows.filter(r => r.type === "include");
   for (const row of includeRows) {
-    // Include: row should have at least one of the selected tags (OR logic)
     const tags = Array.isArray(row.tags) ? row.tags : [row.tags];
     if (tags.length > 0 && !tags.some(tag => rowTags.includes(tag))) {
       return false;
@@ -1180,9 +1139,7 @@ function getRegionTagsFromTagData() {
 
 
 
-/* ===============================
-   FILTERING (UNCHANGED)
-   =============================== */
+ 
 function matchesFilter(row) {
   const search = document.getElementById("searchInput").value.toLowerCase();
 
@@ -1203,7 +1160,7 @@ function matchesFilter(row) {
 
   const rowLevel = getLevel(row);
 
-  // If exactTournament is set, only show resolutions from that specific tournament
+  
   if (filterState.exactTournament) {
     return row.Tournament === filterState.exactTournament
       && (!search || text.includes(search));
@@ -1238,9 +1195,7 @@ document.getElementById("levelFilter")
   });
 
 
-/* ===============================
-   ANALYTICS (FULL RESTORE)
-   =============================== */
+ 
 function renderAnalytics(data) {
   const ctxTag = document.getElementById("tagChart");
   const ctxRegion = document.getElementById("regionChart");
@@ -1251,7 +1206,7 @@ function renderAnalytics(data) {
 
   Chart.helpers.each(Chart.instances, i => i.destroy?.());
 
-  /* --- Top Tags --- */
+  
   const tagCounts = {};
   data.forEach(r => {
     parseTagsFromString(r.Tags).forEach(tag => {
@@ -1272,7 +1227,7 @@ function renderAnalytics(data) {
     options: { plugins: { legend: { display: false } } }
   });
 
-  /* --- By Region --- */
+  
   const regionCounts = {};
   data.forEach(r => {
     if (r.Region) regionCounts[r.Region] = (regionCounts[r.Region] || 0) + 1;
@@ -1283,7 +1238,7 @@ function renderAnalytics(data) {
     data: { labels: Object.keys(regionCounts), datasets: [{ data: Object.values(regionCounts) }] }
   });
 
-  /* --- Committee --- */
+  
   const commCounts = {};
   data.forEach(r => {
     if (r["Topic Committee"]) {
@@ -1302,7 +1257,7 @@ function renderAnalytics(data) {
     options: { plugins: { legend: { display: false } } }
   });
 
-  /* --- Gov vs Opp Wins --- */
+  
   let govWins = 0;
   let oppWins = 0;
 
@@ -1333,7 +1288,7 @@ function renderAnalytics(data) {
 
 
 
-  /* --- Tag Co-occurrence Heatmap --- */
+  
   const tags = Object.keys(tagCounts).slice(0,10);
   const matrix = tags.map(()=>tags.map(()=>0));
 
@@ -1359,7 +1314,7 @@ function renderAnalytics(data) {
     options: { scales: { x: { type:"category", labels:tags }, y:{ type:"category", labels:tags } } }
   });
 
-  /* --- Tag Trend --- */
+  
   const tagTrend = {};
   data.forEach(r => {
     const year = r.Tournament?.match(/\b(20\d{2})\b/)?.[1] || "Unknown";
@@ -1397,14 +1352,14 @@ function renderTournamentTable() {
       data-tournament="${tournamentKey(t.Tournament)}"
     >
       <td class="px-4 py-2">
-        <a
+          <a
           href="#"
           class="text-blue-600 underline hover:text-blue-800"
           data-tournament="${tournamentKey(t.Tournament)}"
           data-tournament-full-name="${t.Tournament || ""}"
           onclick="jumpToResolution(event)"
         >
-          ${t.Tournament || ""}
+          ${normalizeApostrophes(t.Tournament || "")}
         </a>
       </td>
       <td class="px-4 py-2">${t.Host || ""}</td>
@@ -1435,9 +1390,7 @@ function renderTagsTable() {
 
 }
 
-/* ===============================
-   RANDOMIZER (FULL RESTORE)
-   =============================== */
+ 
 function populateRandomizer() {
   const seasonOpts = new Set();
   const regionOpts = new Set();
@@ -1451,9 +1404,7 @@ function populateRandomizer() {
 
     const rowTags = parseTagsFromString(row.Tags);
 
-    /* ------------ SEASON OPTIONS ------------
-       Filter by EVERYTHING EXCEPT season
-    */
+    
     if (
       (randFilterState.regions.size === 0 || randFilterState.regions.has(row.Region)) &&
       (randFilterState.tournaments.size === 0 ||
@@ -1464,9 +1415,7 @@ function populateRandomizer() {
       if (seasonVal) seasonOpts.add(seasonVal);
     }
 
-    /* ------------ REGION OPTIONS ------------
-       Filter by EVERYTHING EXCEPT region
-    */
+    
     if (
       (randFilterState.seasons.size === 0 || randFilterState.seasons.has(seasonVal)) &&
       (randFilterState.tournaments.size === 0 ||
@@ -1477,21 +1426,17 @@ function populateRandomizer() {
       if (row.Region) regionOpts.add(row.Region);
     }
 
-    /* ------------ TOURNAMENT OPTIONS ------------
-       Filter by EVERYTHING EXCEPT tournament
-    */
+    
     if (
       (randFilterState.seasons.size === 0 || randFilterState.seasons.has(seasonVal)) &&
       (randFilterState.regions.size === 0 || randFilterState.regions.has(row.Region)) &&
       matchesDynamicTagRows(rowTags, randFilterState.tagRows, randFilterState.tags, randFilterState.tagFilterType) &&
       (!randFilterState.level || randFilterState.level === rowLevel)
     ) {
-      // Tournament options are now from tournamentData
+      
     }
 
-    /* ------------ LEVEL OPTIONS ------------
-       Filter by EVERYTHING EXCEPT level
-    */
+    
     if (
       (randFilterState.seasons.size === 0 || randFilterState.seasons.has(seasonVal)) &&
       (randFilterState.regions.size === 0 || randFilterState.regions.has(row.Region)) &&
@@ -1543,7 +1488,7 @@ function populateRandomizer() {
 
   const tagOpts = tagData.map(t => t.Tag || t.Name).filter(Boolean);
 
-  // Update available tags for dynamic rows
+  
   allAvailableTags = tagOpts;
 
   fillCheckboxMenu(
@@ -1615,7 +1560,7 @@ document.getElementById("randBtn").addEventListener("click", () => {
   const choices = [];
   const usedIndices = new Set();
   
-  // Generate the requested number of resolutions without duplicates
+  
   for (let i = 0; i < Math.min(quantity, filtered.length); i++) {
     let index;
     do {
@@ -1629,11 +1574,13 @@ document.getElementById("randBtn").addEventListener("click", () => {
     choices.length > 0
       ? choices.map((choice, idx) => `<div class="mb-3"><b>${idx + 1}. ${choice.Resolution.replace(/\n/g, '<br>')}</b><br><i>${choice.Tournament}</i></div>`).join("")
       : "No match found.";
+  
+  if (choices.length > 0) {
+    document.getElementById("randResult").innerHTML = choices.map((choice, idx) => `\n      <div class="mb-3"><b>${idx + 1}. ${normalizeApostrophes((choice.Resolution || "")).replace(/\n/g, '<br>')}</b><br><i>${normalizeApostrophes(choice.Tournament || "")}</i></div>`).join("");
+  }
 });
 
-/* ===============================
-   DYNAMIC TAG ROWS LOGIC
-   =============================== */
+ 
 let allAvailableTags = [];
 
 function updateAvailableTags() {
@@ -1648,7 +1595,7 @@ function renderDynamicTagRows() {
     const rowDiv = document.createElement("div");
     rowDiv.className = "dynamic-tag-row";
 
-    // Include/Exclude Select
+    
     const typeSelect = document.createElement("select");
     typeSelect.innerHTML = `
       <option value="include">Include</option>
@@ -1663,7 +1610,7 @@ function renderDynamicTagRows() {
       renderTable(allData, true);
     });
 
-    // Tag Dropdown (Checkbox-based, matching other filter UIs)
+    
     const dropdownDiv = document.createElement("div");
     dropdownDiv.className = "dropdown";
     
@@ -1688,7 +1635,7 @@ function renderDynamicTagRows() {
     const dropdownMenu = document.createElement("div");
     dropdownMenu.className = "dropdown-content max-h-60 overflow-y-auto";
     
-    // "All" checkbox (only for Include type, not for Exclude)
+    
     const updateCheckboxes = () => {
       dropdownMenu.querySelectorAll('input[type="checkbox"]').forEach(cb => {
         if (cb !== allCb) {
@@ -1728,7 +1675,7 @@ function renderDynamicTagRows() {
       dropdownMenu.appendChild(allLabel);
     }
     
-    // Individual tag checkboxes
+    
     allAvailableTags.forEach(tag => {
       const label = document.createElement("label");
       label.className = "block text-sm cursor-pointer";
@@ -1758,7 +1705,7 @@ function renderDynamicTagRows() {
     dropdownDiv.appendChild(tagBtn);
     dropdownDiv.appendChild(dropdownMenu);
 
-    // Remove Button
+    
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
     removeBtn.className = "tag-remove-btn";
@@ -1786,7 +1733,7 @@ function renderRandDynamicTagRows() {
     const rowDiv = document.createElement("div");
     rowDiv.className = "dynamic-tag-row";
 
-    // Include/Exclude Select
+    
     const typeSelect = document.createElement("select");
     typeSelect.innerHTML = `
       <option value="include">Include</option>
@@ -1799,7 +1746,7 @@ function renderRandDynamicTagRows() {
       populateRandomizer();
     });
 
-    // Tag Dropdown (Checkbox-based, matching other filter UIs)
+    
     const dropdownDiv = document.createElement("div");
     dropdownDiv.className = "dropdown";
     
@@ -1824,7 +1771,7 @@ function renderRandDynamicTagRows() {
     const dropdownMenu = document.createElement("div");
     dropdownMenu.className = "dropdown-content max-h-60 overflow-y-auto";
     
-    // "All" checkbox (only for Include type, not for Exclude)
+    
     const updateCheckboxes = () => {
       dropdownMenu.querySelectorAll('input[type="checkbox"]').forEach(cb => {
         if (cb !== allCb) {
@@ -1862,7 +1809,7 @@ function renderRandDynamicTagRows() {
       dropdownMenu.appendChild(allLabel);
     }
     
-    // Individual tag checkboxes
+    
     allAvailableTags.forEach(tag => {
       const label = document.createElement("label");
       label.className = "block text-sm cursor-pointer";
@@ -1890,7 +1837,7 @@ function renderRandDynamicTagRows() {
     dropdownDiv.appendChild(tagBtn);
     dropdownDiv.appendChild(dropdownMenu);
 
-    // Remove Button
+    
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
     removeBtn.className = "tag-remove-btn";
@@ -1909,7 +1856,7 @@ function renderRandDynamicTagRows() {
 }
 
 document.getElementById("addTagBtn").addEventListener("click", () => {
-  // Add a new row with empty tags array (user can select multiple)
+  
   filterState.tagRows.push({ type: "include", tags: [] });
     filterState.exactTournament = null;
   renderDynamicTagRows();
@@ -1918,16 +1865,14 @@ document.getElementById("addTagBtn").addEventListener("click", () => {
 });
 
 document.getElementById("randAddTagBtn").addEventListener("click", () => {
-  // Add a new row with empty tags array (user can select multiple)
+  
   randFilterState.tagRows.push({ type: "include", tags: [] });
   renderRandDynamicTagRows();
   populateRandomizer();
 });
 
 
-/* ===============================
-   TAB SWITCHING
-   =============================== */
+ 
 const tabRes=document.getElementById("tabRes"),
       tabAna=document.getElementById("tabAna"),
       tabRand=document.getElementById("tabRand");
@@ -1939,7 +1884,6 @@ const tabTags = document.getElementById("tabTags");
 
 const secTour = document.getElementById("tourTab");
 const secTags = document.getElementById("tagsTab");
-const slider=document.getElementById("slider");
 
 function showTab(tab){
   [secRes, secAna, secRand, secTour, secTags].forEach(s =>
@@ -1950,26 +1894,22 @@ function showTab(tab){
     b.classList.remove("active")
   );
 
-
-  if(tab==="res"){secRes.classList.remove("hidden");tabRes.classList.add("active");if (slider) slider.style.transform="translateX(0%)";}
-  if(tab==="ana"){secAna.classList.remove("hidden");tabAna.classList.add("active");if (slider) slider.style.transform="translateX(100%)";}
+  if(tab==="res"){secRes.classList.remove("hidden");tabRes.classList.add("active");}
+  if(tab==="ana"){secAna.classList.remove("hidden");tabAna.classList.add("active");}
   if(tab==="rand"){
     secRand.classList.remove("hidden");
     tabRand.classList.add("active");
     populateRandomizer();
     renderRandDynamicTagRows();
-    if (slider) slider.style.transform="translateX(200%)";
   }
   if (tab === "tour") {
     secTour.classList.remove("hidden");
     tabTour.classList.add("active");
-    if (slider) slider.style.transform = "translateX(300%)";
   }
 
   if (tab === "tags") {
     secTags.classList.remove("hidden");
     tabTags.classList.add("active");
-    if (slider) slider.style.transform = "translateX(400%)";
   }
 
 }
