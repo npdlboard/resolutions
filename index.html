@@ -410,6 +410,13 @@
           <option value="3">Three</option>
         </select>
       </div>
+
+      <div class="w-full max-w-xs">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="randExcludeOutdated" class="w-4 h-4" />
+          <span class="text-sm font-semibold">Exclude outdated resolutions</span>
+        </label>
+      </div>
     </div>
 
     <div class="text-center">
@@ -503,8 +510,12 @@ const randFilterState = {
   tags: new Set(),
   tagFilterType: "include",
   tagRows: [], // Array of {type: 'include'|'exclude', tag: string}
-  level: ""
+  level: "",
+  excludeOutdated: false
 };
+function isOutdated(row) {
+  return String(row.Outdated || "").trim().toUpperCase() === "TRUE";
+}
 function showTableLoading() {
   const overlay = document.getElementById("tableLoadingOverlay");
   if (overlay) overlay.classList.remove("hidden");
@@ -827,6 +838,7 @@ async function fetchData() {
 function populateFilters() {
   const seasonOpts = new Set();
   const regionOpts = new Set();
+  const tournOpts = new Set();
   const levelOpts = new Set();
 
   allData.forEach(row => {
@@ -869,7 +881,8 @@ function populateFilters() {
         && (!filterState.level || filterState.level === rowLevel)
 
     ) {
-      
+      const tournName = tournamentNameMap.get(row.Tournament) || cleanTournamentName(row.Tournament);
+      if (tournName) tournOpts.add(tournName);
     }
 
     
@@ -905,11 +918,9 @@ function populateFilters() {
     "regionFilterBtn"
   );
 
-  const tournOpts = [...new Set(tournamentData.map(t => t.Name).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-
   fillCheckboxMenu(
     "tournFilterMenu",
-    tournOpts,
+    [...tournOpts].sort((a, b) => a.localeCompare(b)),
     filterState.tournaments,
     "tournFilterBtn"
   );
@@ -971,7 +982,7 @@ function renderTable(data, reset = true) {
     >
       ${columnState["Rd"] ? `<td class="px-4 py-2">${r.Rd || ""}</td>` : ""}
       ${columnState["Novice Rd"] ? `<td class="px-4 py-2">${r["N/JV"] || ""}</td>` : ""}
-      <td class="px-4 py-2">${normalizeApostrophes((r.Resolution || "")).replace(/\n/g, '<br>')}</td>
+      <td class="px-4 py-2">${(r.Resolution || "").replace(/\n/g, '<br>')}</td>
       ${columnState["Tournament"] ? `
         <td class="px-4 py-2">
           <a
@@ -981,12 +992,12 @@ function renderTable(data, reset = true) {
             data-resolution="${resolutionKey(r)}"
             onclick="jumpToTournament(event)"
           >
-            ${normalizeApostrophes(r.Tournament || "")}
+            ${r.Tournament || ""}
           </a>
         </td>
       ` : ""}
 
-      ${columnState["Note"] ? `<td class="px-4 py-2">${normalizeApostrophes((r.Note || "")).replace(/\n/g, '<br>')}</td>` : ""}
+      ${columnState["Note"] ? `<td class="px-4 py-2">${(r.Note || "").replace(/\n/g, '<br>')}</td>` : ""}
       ${columnState["Gov Wins"] ? `<td class="px-4 py-2">${r["Gov Wins"] ?? ""}</td>` : ""}
       ${columnState["Opp Wins"] ? `<td class="px-4 py-2">${r["Opp Wins"] ?? ""}</td>` : ""}
       ${columnState["Gov Ballots"] ? `<td class="px-4 py-2">${r["Gov Ballots"] ?? ""}</td>` : ""}
@@ -1050,18 +1061,6 @@ function parseTagsFromString(tagString) {
     .split(",")
     .map(t => t.trim())
     .filter(Boolean);
-}
-function normalizeApostrophes(str) {
-  if (str == null) return str;
-  let s = String(str);
-  s = s.replace(/[\u2018\u2019\u201B\u2032\uFF07]/g, "'");
-  s = s.replace(/â€™|â€˜|â€™/g, "'");
-  s = s.replace(/([A-Za-z0-9])\uFFFD([A-Za-z0-9])/g, "$1'$2");
-  s = s.replace(/\?([^?]*)\?/g, '"$1"');
-  s = s.replace(/\?/g, "'");
-  s = s.replace(/([a-zA-Z])"([a-zA-Z])/g, "$1'$2");
-  s = s.replace(/"([^"]*)'(\s|$|[,.!?;:\)])/g, '"$1"$2');
-  return s;
 }
 function matchesDynamicTagRows(rowTags, tagRows, mainTagSet = filterState.tags, mainTagType = filterState.tagFilterType) {
   const excludeRows = tagRows.filter(r => r.type === "exclude");
@@ -1315,7 +1314,7 @@ function renderTournamentTable() {
           data-tournament-full-name="${t.Tournament || ""}"
           onclick="jumpToResolution(event)"
         >
-          ${normalizeApostrophes(t.Tournament || "")}
+          ${t.Tournament || ""}
         </a>
       </td>
       <td class="px-4 py-2">${t.Host || ""}</td>
@@ -1350,6 +1349,7 @@ function renderTagsTable() {
 function populateRandomizer() {
   const seasonOpts = new Set();
   const regionOpts = new Set();
+  const tournOpts = new Set();
   const levelOpts = new Set();
 
   allData.forEach(row => {
@@ -1389,7 +1389,8 @@ function populateRandomizer() {
       matchesDynamicTagRows(rowTags, randFilterState.tagRows, randFilterState.tags, randFilterState.tagFilterType) &&
       (!randFilterState.level || randFilterState.level === rowLevel)
     ) {
-      
+      const tournName = tournamentNameMap.get(row.Tournament) || cleanTournamentName(row.Tournament);
+      if (tournName) tournOpts.add(tournName);
     }
 
     
@@ -1430,11 +1431,9 @@ function populateRandomizer() {
     }
   );
 
-  const tournOpts = [...new Set(tournamentData.map(t => t.Name).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-
   fillCheckboxMenu(
     "randTournMenu",
-    tournOpts,
+    [...tournOpts].sort((a, b) => a.localeCompare(b)),
     randFilterState.tournaments,
     "randTournBtn",
     () => {
@@ -1492,6 +1491,11 @@ document.getElementById("randTagFilterType")
   });
 
 
+document.getElementById("randExcludeOutdated")
+  .addEventListener("change", e => {
+    randFilterState.excludeOutdated = e.target.checked;
+  });
+
 document.getElementById("randBtn").addEventListener("click", () => {
   const filtered = allData.filter(r => {
     const seasonVal = formatSeasonFromYear(
@@ -1509,7 +1513,8 @@ document.getElementById("randBtn").addEventListener("click", () => {
       && (randFilterState.tournaments.size === 0 ||
           randFilterState.tournaments.has(tournamentNameMap.get(r.Tournament) || cleanTournamentName(r.Tournament)))
       && matchesDynamicTagRows(rowTags, randFilterState.tagRows, randFilterState.tags, randFilterState.tagFilterType)
-      && (!randFilterState.level || randFilterState.level === rowLevel);
+      && (!randFilterState.level || randFilterState.level === rowLevel)
+      && (!randFilterState.excludeOutdated || !isOutdated(r));
   });
 
   const quantity = parseInt(document.getElementById("randQuantitySelect").value, 10) || 1;
@@ -1527,7 +1532,7 @@ document.getElementById("randBtn").addEventListener("click", () => {
   }
 
   if (choices.length > 0) {
-    document.getElementById("randResult").innerHTML = choices.map((choice, idx) => `<div class="mb-3"><b>${idx + 1}. ${normalizeApostrophes((choice.Resolution || "")).replace(/\n/g, '<br>')}</b><br><i>${normalizeApostrophes(choice.Tournament || "")}</i></div>`).join("");
+    document.getElementById("randResult").innerHTML = choices.map((choice, idx) => `<div class="mb-3"><b>${idx + 1}. ${(choice.Resolution || "").replace(/\n/g, '<br>')}</b><br><i>${choice.Tournament || ""}</i></div>`).join("");
   } else {
     document.getElementById("randResult").innerHTML = "No match found.";
   }
